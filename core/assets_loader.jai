@@ -172,6 +172,7 @@ load_textures :: (loaded_assets : *Loaded_Assets, gltf_data : GLTF_Data) -> text
 }
 Material :: struct {
 	name : string;
+	is_name_on_heap := false;
 	ubo : UBO;
 
 	using ubo_content : struct {
@@ -220,7 +221,7 @@ bind :: (material : Material) {
 }
 deinit :: (using material : *Material) {
 	deinit(*ubo);
-	free(name);
+	if is_name_on_heap free(name);
 }
 load_material :: (using gltf_material : GLTF_Material, gltf_data : GLTF_Data, texture_table : Texture_Table) -> Material, ok:bool {
 	set_field :: (texture_field : *int, texture_info : GLTF_Texture_Info) #expand {
@@ -266,6 +267,7 @@ load_material :: (using gltf_material : GLTF_Material, gltf_data : GLTF_Data, te
 	;
 
 	material.name = copy_string(name);
+	material.is_name_on_heap = true;
 	material.ubo = make_ubo_initialized(material.ubo_content);
 	return material, true;
 }

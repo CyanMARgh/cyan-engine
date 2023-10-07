@@ -4,7 +4,7 @@ Framebuffer :: struct {
 	width, height : s32 = -1, -1;
 	samples :u8= 0;
 
-	MAX_ATTACHMENTS :: 4;
+	MAX_ATTACHMENTS :: 8;
 	has_depth_attachment := false;
 	attachments_count := 0;
 	color_attachments_count := 0;
@@ -17,30 +17,45 @@ FB_Attachment :: struct {
 	attachment_type : enum u8 { NONE; DEPTH; COLOR; } = .NONE;
 	format, chanels_type, data_type : GLenum;
 }
-srcheader :: (using framebuffer : Framebuffer) -> string {
-	builder := String_Builder.{allocator = temp};
+srcheader :: (builder : *String_Builder, using framebuffer : Framebuffer, postfix : string, offset : int) {
 	if samples {
-		print_to_builder(*builder, "#define SAMPLES %\n", samples);
+		print_to_builder(builder, "#define SAMPLES% %\n", postfix, samples);
 		for 0..attachments_count-1 {
 			using att := attachments[it];
-			print_to_builder(*builder, "#define U_SAMPLER2DMS_%\n", uppercase(name));
-			print_to_builder(*builder, "layout(binding = %) uniform sampler2D u_%;\n", it, name);
+			print_to_builder(builder, "#define U_SAMPLER2DMS_%1%2\n", uppercase(name), postfix);
+			print_to_builder(builder, "layout(binding = %1) uniform sampler2DMS u_%2%3;\n", offset + it, name, postfix);
 		}
 	} else {
 		for 0..attachments_count-1 {
 			using att := attachments[it];
-			print_to_builder(*builder, "#define U_SAMPLER2D_%;\n", uppercase(name));
-			print_to_builder(*builder, "layout(binding = %) uniform sampler2D u_%;\n", it, name);
+			print_to_builder(builder, "#define U_SAMPLER2D_%1%2\n", uppercase(name), postfix);
+			print_to_builder(builder, "layout(binding = %1) uniform sampler2D u_%2%3;\n", offset + it, name, postfix);
 		}
 	}
+}
+srcheader :: (using framebuffer : Framebuffer, postfix := "", offset := 0) -> string {
+	builder := String_Builder.{allocator = temp};
+	srcheader(*builder, framebuffer, postfix, offset);
 	return builder_to_string(*builder, allocator = temp);
 }
+srcheaders :: (framebuffers : ..Framebuffer) -> string {
+	builder := String_Builder.{allocator = temp};
+	offset := 0;
+	for framebuffers {
+		srcheader(*builder, it, tprint("_%", it_index), offset);
+		offset += it.attachments_count;
+	}
+
+	return builder_to_string(*builder, allocator = temp);
+}
+
 channels_type_to_name :: (chanels_type : GLenum) -> string {
 	result := "";
 	if chanels_type == {
 		case GL_RGBA; result = "vec4";
 		case GL_RGB; result = "vec3";
 		case GL_DEPTH_COMPONENT; result = "float";
+		case GL_RED; result = "float";
 	}
 	assert(result != "");
 	return result;
@@ -91,8 +106,10 @@ make_framebuffer :: (_width : s32, _height : s32, _attachments : ..FB_Attachment
 	glGenFramebuffers(1, *fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		for _attachments {
+			// print("+\n");
 			add_attachment(it);
 		}
+		// print("\n");
 
 		error := glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		if error != GL_FRAMEBUFFER_COMPLETE {
@@ -124,6 +141,15 @@ bind_as_source :: (using framebuffer : Framebuffer) {
 		bind_sampler(xx i, textures[i]);
 	}
 }
+bind_as_sources :: (framebuffers : ..Framebuffer) {
+	slot := 0;
+	for framebuffers {
+		for i : 0..it.attachments_count-1 {
+			bind_sampler(xx slot, it.textures[i]);
+			slot += 1;
+		}
+	}
+}
 set_size :: (using framebuffer : *Framebuffer, size : ivec2) -> ok:bool {
 	ok := true;
 	if width != size.x || height != size.y {
@@ -132,4 +158,10 @@ set_size :: (using framebuffer : *Framebuffer, size : ivec2) -> ok:bool {
 		framebuffer.*, ok = make_framebuffer(width, height, ..attachments, samples);
 	}
 	return ok;
+}
+clear_target :: (flags : GLenum, channels : ..[4]float) {
+	glClear(flags);
+	for channels {
+		glClearBufferfv(GL_COLOR, xx it_index, it.data);
+	}
 }

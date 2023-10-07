@@ -101,7 +101,7 @@ compile_shader_part :: (_source : string, type : u32) -> Shader_Part, ok:bool {
 	if !success {
 		glGetShaderInfoLog(id, 512, null, cast(*GLchar) *info_log_content);
 		info_log := from_c_string(*info_log_content);
-		print_color("failed to compile shader: %", info_log, color = .RED);
+		print_color("failed to compile shader: %\n", info_log, color = .RED);
 		ok, info_log_parsed := scan("%d(%d)", info_log);
 		if info_log_parsed.count >= 2 && info_log_parsed[1].type == type_info(int) {
 			error_line := (cast(*int)(info_log_parsed[1].value_pointer)).*;
@@ -122,6 +122,7 @@ compile_shader_part :: (_source : string, type : u32) -> Shader_Part, ok:bool {
 		} else {
 			print_color("unable to parse error message\n", color = .YELLOW);
 		}
+		// print("full shader source = \n%\n", source);
 		glDeleteShader(id);
 		return .{}, false;
 	}

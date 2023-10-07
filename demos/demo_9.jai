@@ -4,21 +4,13 @@
 #import "GL";
 #import "String";
 #import "Random";
+#import "Print_Color";
 
 main :: () {
 	defer report_memory_leaks();
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	fb_gbuffer := make_framebuffer(backend_state.window_metrics.size, 
-		// .{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-		.{"depth", .COLOR, GL_FLOAT, GL_FLOAT, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT}
-	);
-	defer deinit(*fb_gbuffer);
-	return;
 	fb_gbuffer_ms := make_framebuffer(backend_state.window_metrics.size, 
 		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
 		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
@@ -27,30 +19,27 @@ main :: () {
 		, samples = 4
 	);
 	defer deinit(*fb_gbuffer_ms);
+	fb_gbuffer := make_framebuffer(backend_state.window_metrics.size, 
+		.{"depth", .COLOR, GL_R32F, GL_RED, GL_FLOAT},
+		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
+		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
+		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT}
+	);
+	defer deinit(*fb_gbuffer);
+
 	fb_ssao_raw := make_framebuffer(backend_state.window_metrics.size, 
 		.{"occlusion_raw", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
 	);
 	defer deinit(*fb_ssao_raw);
 
-	// fb_base := make_framebuffer(backend_state.window_metrics.size, 
-	// 	.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-	// 	.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-	// );
-	// defer deinit(*fb_base);
-	// fb_blurred := make_framebuffer(backend_state.window_metrics.size, 
-	// 	.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-	// );
-	// defer deinit(*fb_blurred);
-	dstheader_gbuffer := dstheader(fb_gbuffer);
+	dstheader_gbuffer_ms := dstheader(fb_gbuffer_ms);
+	srcheader_gbuffer := srcheader(fb_gbuffer);
 
-	shader_cube := compile_shader_vf(SRC_VERT_CUBE, incl(dstheader_gbuffer, SRC_FRAG_EXTENDED)); defer deinit(*shader_cube);
-	shader_default := compile_shader_vf(SRC_VERT_DEFAULT, incl(dstheader_gbuffer, SRC_FRAG_EXTENDED)); defer deinit(*shader_default);
-	shader_ssao := compile_shader_vf(
-		SRC_VERT_SCREEN_QUAD, 
-		incl(srcheader(fb_gbuffer), defs("JUSTCOLOR"), SRC_FRAG_SSAO)
-	); 
-	shader_blur := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheader(fb_ssao_raw), SRC_FRAG_BLUR)); defer deinit(*shader_blur);
-	defer deinit(*shader_ssao);
+	shader_gbuf_msaa := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer_ms), dstheader(fb_gbuffer), SRC_FRAG_GBUF_MSAA)); defer deinit(*shader_gbuf_msaa);
+	shader_cube := compile_shader_vf(SRC_VERT_CUBE, incl(dstheader_gbuffer_ms, SRC_FRAG_EXTENDED)); defer deinit(*shader_cube);
+	shader_default := compile_shader_vf(SRC_VERT_DEFAULT, incl(dstheader_gbuffer_ms, SRC_FRAG_EXTENDED)); defer deinit(*shader_default);
+	shader_ssao := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheader_gbuffer, SRC_FRAG_SSAO)); defer deinit(*shader_ssao);
+	shader_blur := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheaders(fb_gbuffer, fb_ssao_raw), SRC_FRAG_BLUR)); defer deinit(*shader_blur);
 
 	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
@@ -59,6 +48,7 @@ main :: () {
 
 	default_material : Material;
 	send_to_gpu(*default_material);
+	defer deinit(*default_material);
 
 	graphics_state.default_camera.linear_speed *= .3;
 
@@ -95,32 +85,22 @@ main :: () {
 		set_size(*fb_gbuffer_ms, backend_state.window_metrics.size);
 		set_size(*fb_ssao_raw, backend_state.window_metrics.size);
 
-		bind_as_target(fb_gbuffer);
-			glClear(GL_DEPTH_BUFFER_BIT);
-			glClearBufferfv(GL_COLOR, 0, float.[ 0,  0,  0,  1].data);
-			glClearBufferfv(GL_COLOR, 1, float.[ 0,  0,  0,  1].data);
-
-			render_scene();
-
 		bind_as_target(fb_gbuffer_ms);
-			glClear(GL_DEPTH_BUFFER_BIT);
-			glClearBufferfv(GL_COLOR, 0, float.[ 0,  0,  0,  1].data);
-
+			clear_target(GL_DEPTH_BUFFER_BIT, .[.7, .8, .9, 1], .[0, 0, 0, 0], .[0, 0, 0, 0]);
 			render_scene();
-
+		bind_as_target(fb_gbuffer);
+			use(*shader_gbuf_msaa);
+				bind_as_source(fb_gbuffer_ms);
+				draw_empty_mesh(6);
 		bind_as_target(fb_ssao_raw);
 			use(*shader_ssao);
 				bind_as_source(fb_gbuffer);
 				bind_sampler(4, noise_texture);
 				draw_empty_mesh(6);
-
 		bind_default_traget();
 			use(*shader_blur);
-				bind_as_source(fb_ssao_raw);
-				bind_sampler(1, fb_gbuffer.textures[1]);
-				// bind_sampler(1, fb_gbuffer_ms.textures[1]);
+				bind_as_sources(fb_gbuffer, fb_ssao_raw);
 				draw_empty_mesh(6);
-
 		check_gl_error();
 	}
 }
@@ -184,6 +164,12 @@ SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTI
 		vec2 noise_scale = u_window_size / 4; 
 		vec2 uv = vo_uv;
 
+		float depth = texture(u_depth, uv).x;
+		if(depth >= 1.) {
+			o_color = vec4(1);
+			return;
+		}
+
 		vec3 frag_pos = texture(u_position, uv).xyz;
 		vec3 normal = texture(u_normal, uv).xyz;
 		vec3 random_vec = normalize(texture(u_noise, uv * noise_scale).xyz);
@@ -217,20 +203,6 @@ SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTI
 GLSL);
 
 SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
-	layout(binding = 1) uniform sampler2D u_color;
-	// layout(binding = 1) uniform sampler2DMS u_color;
-
-	const int u_samples = 4;
-	vec4 texture_average(sampler2DMS source, vec2 uv) {
-		vec2 screen_size = vec2(1280, 720);
-
-		vec4 result = vec4(0);
-		for(int i = 0; i < u_samples; i++) {
-			result += texelFetch(source, ivec2(uv * screen_size), i);
-		}
-		return result / u_samples;
-	}
-
 	in vec2 vo_uv;
 	out vec4 o_color;
 
@@ -242,16 +214,21 @@ SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 		const float S = 1. / (4 * 4);
 
 		float occlusion = 0;
-		for(int x = -2; x <= 1; ++x) {
-			for(int y = -2; y <= 1; ++y) {
-				vec2 offset = (vec2(float(x), float(y)) + .5) * texture_factor;
-				float src = texture(u_occlusion_raw, vo_uv + offset).x;
-				float factor = kernel[x + 2] * kernel[y + 2] * S;
-				occlusion += src * factor;
+		float depth = texture(u_depth_0, uv).x;
+		if(depth >= 1.) {
+			occlusion = 1;
+		} else {
+			for(int x = -2; x <= 1; ++x) {
+				for(int y = -2; y <= 1; ++y) {
+					vec2 offset = (vec2(float(x), float(y)) + .5) * texture_factor;
+					float src = texture(u_occlusion_raw_1, vo_uv + offset).x;
+					float factor = kernel[x + 2] * kernel[y + 2] * S;
+					occlusion += src * factor;
+				}
 			}
 		}
-		// vec3 color = texture_average(u_color, uv).xyz;
-		vec3 color = texture(u_color, uv).xyz;
+		vec3 color = texture(u_color_0, uv).xyz;
+
 
 		if(fract(u_time * .5) < .5) {
 			color *= occlusion;
@@ -259,11 +236,6 @@ SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 		o_color = vec4(color, 1);
 	}
 GLSL);
-
-SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #string GLSL	
-		o_color = vec4(texture_average(u_color, uv).xyz, 1);
-	}
-GLSL
 
 SRC_FRAG_GBUF_MSAA :: #string GLSL
 	vec4 texture_average(sampler2DMS source, vec2 uv, int samples) {
@@ -275,25 +247,27 @@ SRC_FRAG_GBUF_MSAA :: #string GLSL
 		}
 		return result / samples;
 	}
+	in vec2 vo_uv;
 	void main() {
 		#ifdef O_DEPTH
-			#ifdef U_SAMPLER2D_DEPTH
-				o_depth = texture_average(u_depth, SAMPLES);
+			#ifdef U_SAMPLER2DMS_DEPTH
+				o_depth = texture_average(u_depth, vo_uv, SAMPLES).x;
 			#endif
 		#endif
 		#ifdef O_COLOR
-			#ifdef U_SAMPLER2D_COLOR
-				o_color = texture_average(u_color, SAMPLES);
+			#ifdef U_SAMPLER2DMS_COLOR
+				o_color = texture_average(u_color, vo_uv, SAMPLES).xyz;
 			#endif
 		#endif
 		#ifdef O_NORMAL
-			#ifdef U_SAMPLER2D_NORMAL
-				o_normal = texture_average(u_normal, SAMPLES);
+			#ifdef U_SAMPLER2DMS_NORMAL
+				o_normal = texture_average(u_normal, vo_uv, SAMPLES).xyz;
+				// TODO just output all vec3/4 or add O_NORMAL_EXT or something
 			#endif
 		#endif
 		#ifdef O_POSITION
-			#ifdef U_SAMPLER2D_POSITION
-				o_position = texture_average(u_position, SAMPLES);
+			#ifdef U_SAMPLER2DMS_POSITION
+				o_position = texture_average(u_position, vo_uv, SAMPLES).xyz;
 			#endif
 		#endif
 	}
