@@ -4,7 +4,7 @@ from_c_string :: (c_str : *[$N]s8) -> string {
 	str.count = N;
 	return str;
 }
-FATAL_GL_ERROR_CHECK :: true;
+FATAL_GL_ERROR_CHECK :: false;
 check_gl_error :: (loc := #caller_location) {
 	has_errors := false;
 	while true {

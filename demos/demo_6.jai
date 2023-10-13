@@ -55,7 +55,7 @@ main :: () {
 			glEnable(GL_DEPTH_TEST);
 			use(*shader_default);
 			draw_node(loaded_assets, root);
-		bind_default_traget();
+		bind_default_target();
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 		use(*shader_screen_pass);

@@ -41,6 +41,8 @@ make_texture_buffer :: (width : s32, height : s32, using storage_format : Textur
 		return make_texture(width, height, storage_format, null, .[
 			// GL_TEXTURE_MIN_FILTER, GL_NEAREST,
 			// GL_TEXTURE_MAG_FILTER, GL_NEAREST
+			GL_TEXTURE_WRAP_S, xx GL_CLAMP_TO_EDGE,
+			GL_TEXTURE_WRAP_T, xx GL_CLAMP_TO_EDGE,
 			GL_TEXTURE_MIN_FILTER, GL_LINEAR,
 			GL_TEXTURE_MAG_FILTER, GL_LINEAR
 		], false);

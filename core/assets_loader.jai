@@ -27,13 +27,21 @@ Primitive :: struct {
 	material_id : int;
 }
 draw :: (using primitive : Primitive, loaded_assets : Loaded_Assets) {
+		check_gl_error();
 	material := *loaded_assets.materials[material_id];
+		check_gl_error();
 	bind(material);
+		check_gl_error();
 	for material.textures.as_array {
+		check_gl_error();
 		if it == -1 continue;
+		check_gl_error();
 		bind_sampler(xx it_index, loaded_assets.textures[it]);
+		check_gl_error();
 	}
+		check_gl_error();
 	draw(mesh);
+		check_gl_error();
 }
 deinit :: (using primitive : *Primitive) {
 	deinit(*mesh);
@@ -162,8 +170,6 @@ load_textures :: (loaded_assets : *Loaded_Assets, gltf_data : GLTF_Data) -> text
 				return .{}, false, tprint("failed to load: %\n", source_path);
 			}
 			array_add(*textures, texture);
-		} else {
-			print("OLD!\n");
 		}
 	}
 	loaded_assets.textures = textures;
@@ -183,7 +189,7 @@ Material :: struct {
 			METALLIC_ROUGHNESS 	:: 0x2;
 			NORMAL 				:: 0x4;
 			OCCLUSION 			:: 0x8;
-			EMMISSIVE			:: 0x10;
+			EMISSIVE			:: 0x10;
 			DOUBLE_SIDED 		:: 0x20;
 			TRANSMISSION 		:: 0x40;
 
@@ -260,7 +266,7 @@ load_material :: (using gltf_material : GLTF_Material, gltf_data : GLTF_Data, te
 		(ifx metallic_roughness.has_metallic_roughness then .METALLIC_ROUGHNESS else .NONE) |
 		(ifx has_normal then .NORMAL else .NONE) |
 		(ifx has_occlusion then .OCCLUSION else .NONE) |
-		(ifx has_emissive then .EMMISSIVE else .NONE) |
+		(ifx has_emissive then .EMISSIVE else .NONE) |
 		(ifx has_transmission then .TRANSMISSION else .NONE) |
 		(ifx alpha_mode == .OPAQUE then .OPAQUE else ifx alpha_mode == .MASK then .MASK else .BLEND) |
 		(ifx is_double_sided then .DOUBLE_SIDED else .NONE)
@@ -271,8 +277,12 @@ load_material :: (using gltf_material : GLTF_Material, gltf_data : GLTF_Data, te
 	material.ubo = make_ubo_initialized(material.ubo_content);
 	return material, true;
 }
-send_to_gpu :: (using material : *Material) {
-	material.ubo = make_ubo_initialized(material.ubo_content);
+send_to_gpu :: (material : *Material) {
+	if material.ubo.id {
+		set_value(*material.ubo, material.ubo_content);
+	} else {
+		material.ubo = make_ubo_initialized(material.ubo_content);
+	}
 }
 load_materials :: (loaded_assets : *Loaded_Assets, gltf_data : GLTF_Data, texture_table : Texture_Table) -> ok:bool {
 	loaded_assets.materials = NewArray(gltf_data.materials.count, Material);
@@ -285,10 +295,15 @@ load_materials :: (loaded_assets : *Loaded_Assets, gltf_data : GLTF_Data, textur
 }
 
 draw_node :: (using loaded_assets : Loaded_Assets, i : int, extra_transform := Matrix4_Identity) {
+		check_gl_error();
 	node := nodes[i];
+		check_gl_error();
 	if node.primitive_group != -1 {
+		check_gl_error();
 		set_model_transform(extra_transform * node.world_transform);
+		check_gl_error();
 		draw(primitive_groups[node.primitive_group], loaded_assets);
+		check_gl_error();
 	}
 	for node.children draw_node(loaded_assets, it, extra_transform);
 }

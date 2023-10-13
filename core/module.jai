@@ -31,3 +31,4 @@ using True_Type :: #import,dir "truetype";
 #load "texture_3d.jai";
 #load "fonts.jai";
 #load "shader_includes.jai";
+#load "cubemap.jai";

@@ -15,9 +15,10 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 		glfwTerminate();
 		exit(-1);
 	}
-	glEnable(GL_MULTISAMPLE);
 
 	glfwMakeContextCurrent(window);
+	glEnable(GL_MULTISAMPLE);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	gl_load(*gl);
 	glViewport(0, 0, xx initial_size.x, xx initial_size.y);
 	framebuffer_size_callback :: (window : *GLFWwindow, width : s32, height : s32) #c_call {
@@ -110,7 +111,7 @@ for_expansion :: (using window_cycle : Window_Cycle, $body : Code, flags : For_F
 		screenshot_name = _screenshot_name;
 	}
 
-	cycle_length := 1000.;
+	cycle_length := 1000. * 2 * PI;
 	backend_state.delta_time = 1. / target_fps;
 	backend_state.current_time = 0.;
 

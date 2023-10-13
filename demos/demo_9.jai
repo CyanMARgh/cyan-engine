@@ -15,8 +15,8 @@ main :: () {
 		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
 		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
 		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT}
-		, samples = 4
+		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
+		samples = 4
 	);
 	defer deinit(*fb_gbuffer_ms);
 	fb_gbuffer := make_framebuffer(backend_state.window_metrics.size, 
@@ -97,7 +97,7 @@ main :: () {
 				bind_as_source(fb_gbuffer);
 				bind_sampler(4, noise_texture);
 				draw_empty_mesh(6);
-		bind_default_traget();
+		bind_default_target();
 			use(*shader_blur);
 				bind_as_sources(fb_gbuffer, fb_ssao_raw);
 				draw_empty_mesh(6);
@@ -270,9 +270,13 @@ SRC_FRAG_GBUF_MSAA :: #string GLSL
 				o_position = texture_average(u_position, vo_uv, SAMPLES).xyz;
 			#endif
 		#endif
+		#ifdef O_METALLIC_ROUGHNESS
+			#ifdef U_SAMPLER2DMS_METALLIC_ROUGHNESS
+				o_metallic_roughness = vec3(texture_average(u_metallic_roughness, vo_uv, SAMPLES).xy, vo_uv.x);
+			#endif
+		#endif
 	}
 GLSL
-
 
 gen_kernel :: () -> string {
 	builder := String_Builder.{allocator = temp};

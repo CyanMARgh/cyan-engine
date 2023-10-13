@@ -68,7 +68,7 @@ dstheader :: (using framebuffer : Framebuffer) -> string {
 		using att := attachments[it];
 		if attachment_type != .COLOR continue;
 		print_to_builder(*builder, "#define O_%\n", uppercase(name));
-		print_to_builder(*builder, "layout(location = %) out % o_%;\n", color_attachment, channels_type_to_name(chanels_type), name);
+		print_to_builder(*builder, "layout(location = %1) out %2 o_%3;\n", color_attachment, channels_type_to_name(chanels_type), name);
 		color_attachment += 1;
 	}
 	return builder_to_string(*builder, allocator = temp);
@@ -131,7 +131,7 @@ bind_as_target :: (using framebuffer : Framebuffer) {
 	for * buffers it.* = xx (it_index + GL_COLOR_ATTACHMENT0);
 	glDrawBuffers(xx color_attachments_count, buffers.data);
 }
-bind_default_traget :: () {
+bind_default_target :: () {
 	using backend_state.window_metrics;
 	glViewport(0, 0, xx width, xx height);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

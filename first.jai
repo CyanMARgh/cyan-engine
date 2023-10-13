@@ -11,16 +11,17 @@ DEBUG :: true;
 // TODO split texture to smapler & texture base
 // TODO fix slowdown with 120fps
 // TODO SDF and outline on/off for font
-// TODO font codepoints ranges
+// TODO font codepoints ranges (if possible)
 // TODO move font size to ssbo maybe
 // TODO add u_mat_t for font
-// TODO massive primitives renderer (circles without "discard" or gl_FragDepth)
+// TODO massive primitives renderer (+ circles without "discard" / gl_FragDepth write)
 // TODO parameteric 3d primitives renderer (cylinder, sphere, torus, cube) => instancing => multiple cpu-buffers
 // TODO atomics painter: autogenerate attributes header
+// TODO save texture binary/as file
 
 BUILD_AND_RUN_ALL :: false;
-TOTAL_DEMOS :: 10;
-DEMO_ID :: 9;
+TOTAL_DEMOS :: 13;
+DEMO_ID :: 12;
 
 #run {
 	set_build_options_dc(.{do_output = false});

@@ -30,7 +30,7 @@ UBO_MATERIAL :: #string GLSL
 	const int METALLIC_ROUGHNESS 	= 0x2;
 	const int NORMAL 				= 0x4;
 	const int OCCLUSION 			= 0x8;
-	const int EMMISSIVE			 	= 0x10;
+	const int EMISSIVE			 	= 0x10;
 	const int DOUBLE_SIDED 		 	= 0x20;
 	const int TRANSMISSION 		 	= 0x40;
 
@@ -103,13 +103,11 @@ SRC_FRAG_EXTENDED :: #run incl(UBO_MATERIAL, UBO_CAMERA_PROPERTIES, GLTF_TEXTURE
 
 	void main() {
 		vec2 uv_0 = vo.uv_0;
-		vec4 base_color = u_base_color_factor;
 
+		vec4 base_color = u_base_color_factor;
 		if((u_flags & BASE_COLOR) != 0) {
 			base_color *= texture(u_base_color, uv_0);
 		}
-		vec3 normal = normalize(vo.normal);
-		if(!gl_FrontFacing) normal *= -1;
 		#ifdef O_COLOR
 			o_color = base_color.xyz;
 		#else
@@ -118,10 +116,28 @@ SRC_FRAG_EXTENDED :: #run incl(UBO_MATERIAL, UBO_CAMERA_PROPERTIES, GLTF_TEXTURE
 			#endif
 		#endif
 		#ifdef O_NORMAL
+			vec3 normal = normalize(vo.normal);
+			if(!gl_FrontFacing) normal *= -1;
 			o_normal = normal;
 		#endif
 		#ifdef O_POSITION
 			o_position = vo.position;
+		#endif
+		#ifdef O_METALLIC_ROUGHNESS
+			vec2 metallic_roughness;
+			if((u_flags & METALLIC_ROUGHNESS) != 0) {
+				metallic_roughness = texture(u_metallic_roughness, uv_0).yz;
+			} else {
+				metallic_roughness = vec2(u_metallic_factor, u_roughness_factor);
+			}
+			o_metallic_roughness = vec3(metallic_roughness.xy, 0);
+		#endif
+		#ifdef O_EMISSIVE
+			vec3 emissive = u_emissive_strength * u_emissive_factor;
+			if((u_flags & EMISSIVE) != 0) {
+				emissive = texture(u_emissive, uv_0).xyz;
+			}
+			o_emissive = emissive;
 		#endif
 	}
 GLSL);

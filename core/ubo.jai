@@ -30,4 +30,5 @@ set_value :: (using ubo : *UBO, data : $T) {
 
 deinit :: (using ubo : *UBO) {
 	glDeleteBuffers(1, *id);
+	id = 0;
 }
