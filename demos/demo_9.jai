@@ -233,7 +233,8 @@ SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 		vec3 color = texture(u_color_0, uv).xyz;
 
 
-		if(fract(u_time * .5) < .5) {
+		// if(fract(u_time * .5) < .5) 
+		{
 			color *= occlusion;
 		}
 		o_color = vec4(color, 1);

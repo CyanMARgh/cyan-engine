@@ -31,7 +31,7 @@ main :: () {
 	// );
 	// defer deinit(*fb_gbuffer);
 
-	// ssao_quality := ivec2.{1280, 720};
+	ssao_quality := ivec2.{1280, 720};
 	fb_ssao_raw := make_framebuffer(backend_state.window_metrics.size, 
 		.{"occlusion_raw", .COLOR, GL_RED, GL_RED, GL_UNSIGNED_BYTE},
 	);
@@ -157,10 +157,10 @@ main :: () {
 
 		// set_size(*fb_gbuffer, backend_state.window_metrics.size);
 		set_size(*fb_gbuffer_ms, backend_state.window_metrics.size);
-		set_size(*fb_ssao_raw, backend_state.window_metrics.size);
-		set_size(*fb_ssao_blurred, backend_state.window_metrics.size);
-		// set_size(*fb_ssao_raw, ssao_quality);
-		// set_size(*fb_ssao_blurred, ssao_quality);
+		// set_size(*fb_ssao_raw, backend_state.window_metrics.size);
+		// set_size(*fb_ssao_blurred, backend_state.window_metrics.size);
+		set_size(*fb_ssao_raw, ssao_quality);
+		set_size(*fb_ssao_blurred, ssao_quality);
 
 		// bind_as_target(fb_gbuffer_ms);
 		bind_as_target(fb_gbuffer_ms);
@@ -202,12 +202,13 @@ main :: () {
 			glDisable(GL_DEPTH_TEST);
 		bind_as_target(fb_ssao_raw);
 			use(*shader_ssao);
+				set(*shader_ssao, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				bind_as_source(fb_gbuffer_ms);
 				bind_sampler(6, noise_texture);
 				draw_empty_mesh(6);
 		bind_as_target(fb_ssao_blurred);
 			use(*shader_blur);
-				// set(*shader_blur, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
+				set(*shader_blur, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				bind_as_sources(fb_gbuffer_ms, fb_ssao_raw);
 				draw_empty_mesh(6);
 		bind_default_target();
@@ -716,15 +717,14 @@ SRC_FRAG_LIGHT_PASS :: #run incl(UBO_TIME_INFO, UBO_SCREEN_METRICS, UBO_CAMERA_P
 			vec2 mr = texelFetch(u_metallic_roughness, uvs, sample_id).yx;
 			float 
 			ao = texture(u_ambient_occlusion, uv).x;
-			// if(fract(u_time * .5) < .5) 
-			// ao = 1;
+			if(fract(u_time * .5) < .5) 
+			ao = 1;
 			return get_color(
 				position, normal, 
 				base_color, mr, emissive,
 				u_brdf, u_skybox,
 				ao
 			);
-			// return vec3(ao);
 		}
 	}
 
@@ -747,6 +747,8 @@ GLSL);
 SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
 	layout(binding = 6) uniform sampler2D u_noise;
 
+	uniform vec2 u_ssao_quality;
+
 	in vec2 vo_uv;
 
 	float linearize_depth(float depth) {
@@ -759,7 +761,7 @@ SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTI
 	}
 
 	void main() {
-		vec2 noise_scale = u_window_size / 4; 
+		vec2 noise_scale = u_ssao_quality / 4; 
 		vec2 uv = vo_uv;
 
 		float depth = texture_s0(u_depth, uv).x;
@@ -804,7 +806,7 @@ SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
 
-	// uniform vec2 u_ssao_quality;
+	uniform vec2 u_ssao_quality;
 
 	vec4 texture_s0(sampler2DMS source, vec2 uv) {
 		return texelFetch(source, ivec2(uv * u_window_size), 0);
@@ -812,7 +814,7 @@ SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 
 	void main() {
 		vec2 uv = vo_uv;
-		vec2 texture_factor = 1.0 / u_window_size;
+		vec2 texture_factor = 1.0 / u_ssao_quality;
 
 		float kernel[4] = float[4](1, 1, 1, 1);
 		const float S = 1. / (4 * 4);
