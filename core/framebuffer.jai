@@ -133,6 +133,7 @@ bind_as_target :: (using framebuffer : Framebuffer) {
 }
 bind_default_target :: () {
 	using backend_state.window_metrics;
+	// print("backend_state.window_metrics = %\n", backend_state.window_metrics);
 	glViewport(0, 0, xx width, xx height);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -153,6 +154,7 @@ bind_as_sources :: (framebuffers : ..Framebuffer) {
 set_size :: (using framebuffer : *Framebuffer, size : ivec2) -> ok:bool {
 	ok := true;
 	if width != size.x || height != size.y {
+		// print("!\n");
 		deinit(framebuffer);
 		width, height = size.x, size.y;
 		framebuffer.*, ok = make_framebuffer(width, height, ..attachments, samples);

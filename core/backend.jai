@@ -17,6 +17,7 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 	}
 
 	glfwMakeContextCurrent(window);
+
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	gl_load(*gl);

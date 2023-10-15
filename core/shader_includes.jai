@@ -141,3 +141,10 @@ SRC_FRAG_EXTENDED :: #run incl(UBO_MATERIAL, UBO_CAMERA_PROPERTIES, GLTF_TEXTURE
 		#endif
 	}
 GLSL);
+
+SRC_TARGET_MAIN :: #string GLSL
+	#define O_COLOR4
+	layout(location = 0) out vec4 o_color;
+GLSL
+
+

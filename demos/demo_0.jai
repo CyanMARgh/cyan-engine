@@ -5,7 +5,7 @@
 
 main :: () {
 	// defer report_memory_leaks();
-	init_resources(); defer deinit_resources();
+	init_resources(.{100, 100}); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
 	shader_triangle := compile_shader_vf(SRC_VERT_CAMERA_UBO_TEST, SRC_FRAG_TRIANGLE);

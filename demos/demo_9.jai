@@ -83,7 +83,8 @@ main :: () {
 
 		set_size(*fb_gbuffer, backend_state.window_metrics.size);
 		set_size(*fb_gbuffer_ms, backend_state.window_metrics.size);
-		set_size(*fb_ssao_raw, backend_state.window_metrics.size);
+		ssao_quality := ivec2.{1280, 720};
+		set_size(*fb_ssao_raw, ssao_quality);
 
 		bind_as_target(fb_gbuffer_ms);
 			clear_target(GL_DEPTH_BUFFER_BIT, .[.7, .8, .9, 1], .[0, 0, 0, 0], .[0, 0, 0, 0]);
@@ -99,6 +100,7 @@ main :: () {
 				draw_empty_mesh(6);
 		bind_default_target();
 			use(*shader_blur);
+				set(*shader_blur, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				bind_as_sources(fb_gbuffer, fb_ssao_raw);
 				draw_empty_mesh(6);
 		check_gl_error();
@@ -205,10 +207,11 @@ GLSL);
 SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
+	uniform vec2 u_ssao_quality = vec2(1);
 
 	void main() {
 		vec2 uv = vo_uv;
-		vec2 texture_factor = 1.0 / u_window_size;
+		vec2 texture_factor = 1.0 / u_ssao_quality;
 
 		float kernel[4] = float[4](1, 1, 1, 1);
 		const float S = 1. / (4 * 4);
@@ -237,13 +240,11 @@ SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 	}
 GLSL);
 
-SRC_FRAG_GBUF_MSAA :: #string GLSL
+SRC_FRAG_GBUF_MSAA :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 	vec4 texture_average(sampler2DMS source, vec2 uv, int samples) {
-		vec2 screen_size = vec2(1280, 720);
-
 		vec4 result = vec4(0);
 		for(int i = 0; i < samples; i++) {
-			result += texelFetch(source, ivec2(uv * screen_size), i);
+			result += texelFetch(source, ivec2(uv * u_window_size), i);
 		}
 		return result / samples;
 	}
@@ -276,11 +277,11 @@ SRC_FRAG_GBUF_MSAA :: #string GLSL
 			#endif
 		#endif
 	}
-GLSL
+GLSL);
 
 gen_kernel :: () -> string {
 	builder := String_Builder.{allocator = temp};
-	KERNEL_SIZE :: 32;
+	KERNEL_SIZE :: 20;
 	KERNEL_RADIUS :: 0.7;
 	KERNEL_BIAS :: 0.025;
 

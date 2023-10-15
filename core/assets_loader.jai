@@ -27,21 +27,13 @@ Primitive :: struct {
 	material_id : int;
 }
 draw :: (using primitive : Primitive, loaded_assets : Loaded_Assets) {
-		check_gl_error();
 	material := *loaded_assets.materials[material_id];
-		check_gl_error();
 	bind(material);
-		check_gl_error();
 	for material.textures.as_array {
-		check_gl_error();
 		if it == -1 continue;
-		check_gl_error();
 		bind_sampler(xx it_index, loaded_assets.textures[it]);
-		check_gl_error();
 	}
-		check_gl_error();
 	draw(mesh);
-		check_gl_error();
 }
 deinit :: (using primitive : *Primitive) {
 	deinit(*mesh);
@@ -295,15 +287,10 @@ load_materials :: (loaded_assets : *Loaded_Assets, gltf_data : GLTF_Data, textur
 }
 
 draw_node :: (using loaded_assets : Loaded_Assets, i : int, extra_transform := Matrix4_Identity) {
-		check_gl_error();
 	node := nodes[i];
-		check_gl_error();
 	if node.primitive_group != -1 {
-		check_gl_error();
 		set_model_transform(extra_transform * node.world_transform);
-		check_gl_error();
 		draw(primitive_groups[node.primitive_group], loaded_assets);
-		check_gl_error();
 	}
 	for node.children draw_node(loaded_assets, it, extra_transform);
 }
@@ -313,17 +300,11 @@ load_assets :: (source : string) -> Loaded_Assets, root:int {
 	defer gltf_free(*gltf_data);
 	gltf_load_buffers(*gltf_data);
 
-	check_gl_error();
 	texture_table := load_textures(*loaded_assets, gltf_data);
-	check_gl_error();
 	load_materials(*loaded_assets, gltf_data, texture_table);
-	check_gl_error();
 	deinit(*texture_table);
-	check_gl_error();
 	load_primitive_groups(*loaded_assets, gltf_data);
-	check_gl_error();
 	load_nodes(*loaded_assets, gltf_data);
-	check_gl_error();
 
 	root := -1;
 	for loaded_assets.nodes {

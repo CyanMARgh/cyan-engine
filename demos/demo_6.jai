@@ -46,6 +46,9 @@ main :: () {
 		}
 		update_default_camera();
 
+		set_size(*framebuffer, backend_state.window_metrics.size);
+		// print("->% x %\n", framebuffer.width, framebuffer.height);
+
 		bind_as_target(framebuffer);
 			glClearBufferfv(GL_COLOR, 0, float.[.7, .8, .9,  1].data);
 			glClearBufferfv(GL_COLOR, 1, float.[ 0,  0,  0,  1].data);
@@ -55,6 +58,7 @@ main :: () {
 			glEnable(GL_DEPTH_TEST);
 			use(*shader_default);
 			draw_node(loaded_assets, root);
+
 		bind_default_target();
 
 		glClear(GL_DEPTH_BUFFER_BIT);
@@ -85,7 +89,7 @@ SRC_VERT_SCREEN_QUAD :: #string GLSL
 		gl_Position = vec4(uv * 2 - 1, 0, 1);
 	}
 GLSL
-SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #string GLSL
+SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 	layout(binding = 0) uniform sampler2DMS u_depth;
 	layout(binding = 1) uniform sampler2DMS u_color;
 	layout(binding = 2) uniform sampler2DMS u_normal;
@@ -96,11 +100,9 @@ SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #string GLSL
 
 	const int u_samples = 8;
 	vec4 texture_average(sampler2DMS source, vec2 uv) {
-		vec2 screen_size = vec2(1280, 720);
-
 		vec4 result = vec4(0);
 		for(int i = 0; i < u_samples; i++) {
-			result += texelFetch(source, ivec2(uv * screen_size), i);
+			result += texelFetch(source, ivec2(uv * u_window_size), i);
 		}
 		return result / u_samples;
 	}
@@ -131,7 +133,7 @@ SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #string GLSL
 		}
 		o_color = vec4(color, 1);
 	}
-GLSL
+GLSL);
 SRC_FRAG_SCREEN_SHOW_COLOR :: #string GLSL
 	uniform float u_time;
 
@@ -139,29 +141,30 @@ SRC_FRAG_SCREEN_SHOW_COLOR :: #string GLSL
 	out vec4 o_color;
 	
 	void main() {
-		vec2 screen_size = vec2(1280, 720);
 		vec2 uv = vo_uv;
 		vec3 color;
 
-		if(uv.y > .5) {
-			uv.y = uv.y * 2 - 1;
-			if(uv.x > .5) {
-				uv.x = uv.x * 2 - 1;
-				color = texture(u_color, uv).xyz;
-			} else {
-				uv.x = uv.x * 2;
-				color = texture(u_depth, uv).xxx;
-			}
-		} else {
-			uv.y = uv.y * 2;
-			if(uv.x > .5) {
-				uv.x = uv.x * 2 - 1;
-				color = texture(u_normal, uv).xyz;
-			} else {
-				uv.x = uv.x * 2;
-				color = texture(u_position, uv).xyz;
-			}
-		}
+		color = vec3(fract(vo_uv), 0);
+
+		// if(uv.y > .5) {
+		// 	uv.y = uv.y * 2 - 1;
+		// 	if(uv.x > .5) {
+		// 		uv.x = uv.x * 2 - 1;
+		// 		color = texture(u_color, uv).xyz;
+		// 	} else {
+		// 		uv.x = uv.x * 2;
+		// 		color = texture(u_depth, uv).xxx;
+		// 	}
+		// } else {
+		// 	uv.y = uv.y * 2;
+		// 	if(uv.x > .5) {
+		// 		uv.x = uv.x * 2 - 1;
+		// 		color = texture(u_normal, uv).xyz;
+		// 	} else {
+		// 		uv.x = uv.x * 2;
+		// 		color = texture(u_position, uv).xyz;
+		// 	}
+		// }
 		o_color = vec4(color, 1);
 	}
 GLSL

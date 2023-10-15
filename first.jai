@@ -18,10 +18,11 @@ DEBUG :: true;
 // TODO parameteric 3d primitives renderer (cylinder, sphere, torus, cube) => instancing => multiple cpu-buffers
 // TODO atomics painter: autogenerate attributes header
 // TODO save texture binary/as file
+// TODO push target framebuffer metrics
 
 BUILD_AND_RUN_ALL :: false;
-TOTAL_DEMOS :: 13;
-DEMO_ID :: 12;
+TOTAL_DEMOS :: 14;
+DEMO_ID :: 13;
 
 #run {
 	set_build_options_dc(.{do_output = false});

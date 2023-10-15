@@ -31,6 +31,7 @@ main :: () {
 	// );
 	// defer deinit(*fb_gbuffer);
 
+	// ssao_quality := ivec2.{1280, 720};
 	fb_ssao_raw := make_framebuffer(backend_state.window_metrics.size, 
 		.{"occlusion_raw", .COLOR, GL_RED, GL_RED, GL_UNSIGNED_BYTE},
 	);
@@ -157,6 +158,9 @@ main :: () {
 		// set_size(*fb_gbuffer, backend_state.window_metrics.size);
 		set_size(*fb_gbuffer_ms, backend_state.window_metrics.size);
 		set_size(*fb_ssao_raw, backend_state.window_metrics.size);
+		set_size(*fb_ssao_blurred, backend_state.window_metrics.size);
+		// set_size(*fb_ssao_raw, ssao_quality);
+		// set_size(*fb_ssao_blurred, ssao_quality);
 
 		// bind_as_target(fb_gbuffer_ms);
 		bind_as_target(fb_gbuffer_ms);
@@ -182,10 +186,10 @@ main :: () {
 				bind_sampler(7, prerendered_cubemap);
 				bind_sampler(6, texture_brdf);
 				bind(material_default);
-				for j : 0..7 {
-					for i : 0..7 {
-						material_default.metallic_factor = i / 7.;
-						material_default.roughness_factor = j / 7.;
+				for j : 0..5 {
+					for i : 0..5 {
+						material_default.metallic_factor = i / 5.;
+						material_default.roughness_factor = j / 5.;
 						send_to_gpu(*material_default);
 						set_model_transform(make_translation_matrix4(.{(j - 5) * 1.2, (i - 5) * 1.2, -9}) * make_scale_matrix4(.{.5, .5, .5}));
 						draw_empty_mesh(rows * columns * 6);
@@ -203,6 +207,7 @@ main :: () {
 				draw_empty_mesh(6);
 		bind_as_target(fb_ssao_blurred);
 			use(*shader_blur);
+				// set(*shader_blur, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				bind_as_sources(fb_gbuffer_ms, fb_ssao_raw);
 				draw_empty_mesh(6);
 		bind_default_target();
@@ -341,9 +346,10 @@ SRC_FRAG_REFLECTIVE_TEXTURED :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, 
 GLSL);
 SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0 :: #string GLSL
 	const float PI = 3.141592;
-	const float Epsilon = 0.00001;
+	const float epsilon = 0.00001;
 	const vec3 Fdielectric = vec3(0.04);
 	#define LOD_MAX_LEVEL 5
+	const float gamma = 2.2;
 
 	float ndfGGX(float cosLh, float roughness) {
 		float alpha   = roughness * roughness;
@@ -388,7 +394,8 @@ SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0 :: #string GLSL
 			// vec3 Li = -lights[i].direction;
 			// vec3 Lradiance = lights[i].radiance;
 			float phi = u_time * .5;
-			vec3 Li = normalize(vec3(sin(phi), .1, cos(phi)));
+			vec3 Li = normalize(vec3(1, 1, 1));
+			// vec3 Li = normalize(vec3(sin(phi), .1, cos(phi)));
 			vec3 Lradiance = vec3(1., .9, .8);
 
 			vec3 Lh = normalize(Li + Lo);
@@ -402,7 +409,7 @@ SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0 :: #string GLSL
 
 			vec3 kd = mix(vec3(1.0) - F, vec3(0.0), metallic);
 			vec3 diffuseBRDF = kd * albedo;
-			vec3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo);
+			vec3 specularBRDF = (F * D * G) / max(epsilon, 4.0 * cosLi * cosLo);
 			directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
 		}
 
@@ -695,6 +702,10 @@ SRC_FRAG_LIGHT_PASS :: #run incl(UBO_TIME_INFO, UBO_SCREEN_METRICS, UBO_CAMERA_P
 		ivec2 uvs = ivec2(uv * u_window_size);
 
 		vec3 base_color = texelFetch(u_color, uvs, sample_id).xyz;
+		// if(fract(u_time * .5) < .5) {
+		// 	base_color = source_color_cor_correction(base_color);
+		// }
+
 		float depth = texelFetch(u_depth, uvs, sample_id).x;
 		if(depth >= 1) {
 			return base_color;
@@ -703,23 +714,31 @@ SRC_FRAG_LIGHT_PASS :: #run incl(UBO_TIME_INFO, UBO_SCREEN_METRICS, UBO_CAMERA_P
 			vec3 position = texelFetch(u_position, uvs, sample_id).xyz;
 			vec3 emissive = texelFetch(u_emissive, uvs, sample_id).xyz;
 			vec2 mr = texelFetch(u_metallic_roughness, uvs, sample_id).yx;
-			float ao = texture(u_ambient_occlusion, uv).x;
+			float 
+			ao = texture(u_ambient_occlusion, uv).x;
+			// if(fract(u_time * .5) < .5) 
+			// ao = 1;
 			return get_color(
 				position, normal, 
 				base_color, mr, emissive,
 				u_brdf, u_skybox,
 				ao
 			);
+			// return vec3(ao);
 		}
 	}
 
 	void main() {
 		vec3 color = vec3(0);
-		int samples = 4;
+		int samples = 8;
 		for(int i = 0; i < samples; i++) {
 			color += color_by_sampler_id(vo_uv, i);
 		}
 		color /= samples;
+
+		// if(fract(u_time * .5) < .5) {
+		// 	color = result_color_correction(color);
+		// }
 
 		o_color = vec4(color, 1);
 	}
@@ -785,6 +804,8 @@ SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
 
+	// uniform vec2 u_ssao_quality;
+
 	vec4 texture_s0(sampler2DMS source, vec2 uv) {
 		return texelFetch(source, ivec2(uv * u_window_size), 0);
 	}
@@ -816,7 +837,7 @@ GLSL);
 
 gen_kernel :: () -> string {
 	builder := String_Builder.{allocator = temp};
-	KERNEL_SIZE :: 32;
+	KERNEL_SIZE :: 16;
 	KERNEL_RADIUS :: 0.7;
 	KERNEL_BIAS :: 0.025;
 

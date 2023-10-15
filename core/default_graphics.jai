@@ -10,6 +10,7 @@ graphics_state : struct {
 	// sun & main lights          5 
 
 	empty_mesh : Mesh;
+	scene_translation := Matrix4_Identity;
 }
 
 // COLOR BINDINGS
@@ -20,6 +21,25 @@ graphics_state : struct {
 // emissive  				4
 // transmission 			5
 
+Scene_Transformation :: struct {
+	m : Matrix4;
+}
+trnaslate :: (offset : Vector3) -> Scene_Transformation {
+	return .{make_translation_matrix4(offset)};
+}
+scale :: (factor : Vector3) -> Scene_Transformation {
+	return .{make_scale_matrix4(factor)};
+}
+for_expansion :: (st : Scene_Transformation, $body : Code, flags : For_Flags) #expand {
+	`it, `it_index := 0;
+	old_translation := graphics_state.scene_translation;
+	graphics_state.scene_translation = st.m * old_translation;
+	defer graphics_state.scene_translation = old_translation;
+	#insert body;
+}
+draw_node_p :: (using loaded_assets : Loaded_Assets, i : int) {
+	draw_node(loaded_assets, i, graphics_state.scene_translation);
+}
 
 init_default_graphics :: () {
 	default_camera.screen_size = backend_state.window_metrics.size;

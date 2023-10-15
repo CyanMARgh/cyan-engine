@@ -72,6 +72,8 @@ main :: () {
 				switch_cursor_lock();
 			}
 		}
+		set_size(*fb_gbuffer, backend_state.window_metrics.size);
+
 		update_default_camera();
 		// scene_light.sun.direction = .{sin(current_time), .5, cos(current_time)};
 		// set_value(*ubo_scene_light, scene_light);
