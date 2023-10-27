@@ -9,6 +9,7 @@ main :: () {
 	// defer report_memory_leaks();
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
+	init_ui(); defer deinit_ui();
 
 	fb_gbuffer := make_framebuffer(1280, 720, 
 		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
@@ -44,7 +45,10 @@ main :: () {
 	graphics_state.default_camera = .{.{yaw = 0.440064, pitch = -0.023836, position = .{1.826999, -0.00406, 3.104916}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 10, 0.15, 1.570796};
 	update_default_camera(true);
 
-	for window_cycle(print_statistical_fps = true, capture_video = true) {
+	julia_offset := Vector3.{1., 0, 0};
+
+	for window_cycle(print_statistical_fps = true, capture_video = false) {
+		maybe_switch := false;
 		for Events if it.type == {
 			case .KEY; using it.key_event;
 			if type == .PRESS ifx keycode == {
@@ -54,7 +58,7 @@ main :: () {
 			}
 			case .MOUSE_BUTTON; using it.mouse_button_event;
 			if button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS {
-				switch_cursor_lock();
+				maybe_switch = true;
 			}
 		}
 		update_default_camera();
@@ -68,7 +72,7 @@ main :: () {
 
 			glEnable(GL_DEPTH_TEST);
 			use(*shader_raymarched);
-				for translate(.{1 * cos(current_time * .0), 0, 0}) for scale(1.5) draw_cube_base();
+				for translate(julia_offset) for scale(1.5) draw_cube_base();
 			use(*shader_default);
 				draw_node(loaded_assets, root);
 			glDisable(GL_DEPTH_TEST);
@@ -80,17 +84,30 @@ main :: () {
 				set(*shader_ssao, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				draw_empty_mesh(6);
 		bind_default_target();
+			clear_target(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, .[0, 0, 0, 0]);
 			use(*shader_blur);
 				set(*shader_blur, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				bind_as_sources(fb_gbuffer, fb_ssao_raw);
 				draw_empty_mesh(6);
+	
+			ui_begin();
+				// if button("button #1") print("button #1\n");
+				// if button("second button") print("button #2\n");
+				float_range(*julia_offset.x, -4, 4, "x = %");
+				float_range(*julia_offset.y, -4, 4, "y = %");
+				float_range(*julia_offset.z, -4, 4, "z = %");
+
+				// if button_base(.{.{5, 5}, .{200, 50}}, "button #1") print("button #1\n");
+				// if button_base(.{.{5, 5}, .{100, 50}}, "btn2") print("button #2\n");
+			ui_end();
 		check_gl_error();
+
+		if maybe_switch && !ui_state.ui_interacted_this_frame switch_cursor_lock();
 
 		// use(*shader_screen_pass);
 		// 	bind_as_source(fb_gbuffer);
 		// draw_empty_mesh(6);
-
-		if(current_time > 10) exit();
+		// if(current_time > 10) exit();
 	}
 }
 

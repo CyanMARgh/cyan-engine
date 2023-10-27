@@ -102,3 +102,13 @@ inside :: (position : Vector2, zone : Rect) -> bool {
 		zone.left_top.x <= position.x && position.x <= zone.right_bottom.x &&
 		zone.left_top.y <= position.y && position.y <= zone.right_bottom.y;
 }
+
+scl_hash :: (using loc : Source_Code_Location) -> u32 {
+	h123 : [2]int = int.[line_number, character_number];
+	return get_hash(h123);
+}
+scl_cmp :: (loc_1 : Source_Code_Location, loc_2 : Source_Code_Location) -> bool {
+	if loc_1.line_number != loc_2.line_number return false;
+	if loc_1.character_number != loc_2.character_number return false;
+	return loc_1.fully_pathed_filename == loc_2.fully_pathed_filename;
+}

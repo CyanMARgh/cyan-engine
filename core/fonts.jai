@@ -141,5 +141,5 @@ load_font_gpu :: (source_path : string, charsets : ..string) -> Font, ok:bool {
 	return font, true;
 }
 
-CHARACTERS_LIST_DEFAULT :: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ,./?`~!@\"#$;:'%^&*()[]{}<>|\\";
+CHARACTERS_LIST_DEFAULT :: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ,./?`~!@\"#$;:'%^&*()[]{}<>|\\+-=";
 CHARACTERS_LIST_RUSSIAN :: "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";

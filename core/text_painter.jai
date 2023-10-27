@@ -141,7 +141,7 @@ VERT_TEXT_QUAD :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 		uint character_id = gl_VertexID / 6;
 		uint vertex_id = gl_VertexID % 6;
 		Character character = u_characters_gpu[character_id];
-		float points[12] = float[12](0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1);
+		float points[12] = float[12](0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0);
 		vec2 p = vec2(points[vertex_id << 1], points[(vertex_id << 1) | 1]);
 		vec4 P = vec4(mix(character.left_top, character.right_bottom, p), 0, 1);
 
