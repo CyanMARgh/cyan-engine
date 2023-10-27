@@ -19,19 +19,19 @@ main :: () {
 	);
 	defer deinit(*fb_solid);
 
-	shader_solid := compile_shader_vf(SRC_VERT_DEFAULT, incl(SRC_TARGET_MAIN, SRC_FRAG_EXTENDED));
+	shader_solid := compile_shader_vf(VERT_DEFAULT, incl(SRC_TARGET_MAIN, FRAG_EXTENDED));
 	defer deinit(*shader_solid);
-	shader_cube := compile_shader_vf(SRC_VERT_CUBE, incl(SRC_TARGET_MAIN, SRC_FRAG_EXTENDED));
+	shader_cube := compile_shader_vf(VERT_CUBE, incl(SRC_TARGET_MAIN, FRAG_EXTENDED));
 	defer deinit(*shader_cube);
-	shader_transparent := compile_shader_vf(SRC_VERT_DEFAULT, incl(dstheader(fb_transparent), SRC_FRAG_WEIGHTED_BLENDED));
+	shader_transparent := compile_shader_vf(VERT_DEFAULT, incl(dstheader(fb_transparent), FRAG_WEIGHTED_BLENDED));
 	defer deinit(*shader_transparent);
-	shader_cube_transparent := compile_shader_vf(SRC_VERT_CUBE, incl(dstheader(fb_transparent), SRC_FRAG_WEIGHTED_BLENDED));
+	shader_cube_transparent := compile_shader_vf(VERT_CUBE, incl(dstheader(fb_transparent), FRAG_WEIGHTED_BLENDED));
 	defer deinit(*shader_cube_transparent);
 
-	shader_screen_pass := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheaders(fb_solid, fb_transparent), SRC_FRAG_SCREEN_PASS));
+	shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheaders(fb_solid, fb_transparent), FRAG_SCREEN_PASS));
 	defer deinit(*shader_screen_pass);
-	// shader_screen_pass := compile_shader_vf(SRC_VERT_SCREEN_QUAD, SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED);
-	shader_show_texture := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(defs(), SRC_FRAG_SHOW_TEXTURE));
+	// shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED);
+	shader_show_texture := compile_shader_vf(VERT_SCREEN_QUAD, incl(defs(), FRAG_SHOW_TEXTURE));
 	defer deinit(*shader_show_texture);
 
 	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
@@ -82,7 +82,7 @@ main :: () {
 			glDepthFunc(GL_LESS);
 			clear_target(GL_DEPTH_BUFFER_BIT, .[.7, .8, .9, 1.]);
 			use(*shader_solid);
-				for trnaslate(.{1.5, 0, 0}) draw_node_p(loaded_assets, root);
+				for translate(.{1.5, 0, 0}) draw_node_p(loaded_assets, root);
 
 			glDisable(GL_DEPTH_TEST);
 
@@ -101,13 +101,13 @@ main :: () {
 					material_default.base_color_factor = .{1, .8, .8, .4};
 					draw_cube_base();
 					material_default.base_color_factor = .{.8, 1, .8, .4};
-					for trnaslate(.{.4, 0, 0}) draw_cube_base();
+					for translate(.{.4, 0, 0}) draw_cube_base();
 					material_default.base_color_factor = .{.8, .8, 1, .4};
-					for trnaslate(.{-.4, 0, 0}) draw_cube_base();
+					for translate(.{-.4, 0, 0}) draw_cube_base();
 				}
 			for *shader_transparent {
 				set("u_alpha_scale", .2);
-				for trnaslate(.{-1.5, 0, 0}) draw_node_p(loaded_assets, root);
+				for translate(.{-1.5, 0, 0}) draw_node_p(loaded_assets, root);
 				set("u_alpha_scale", 1.);
 			}
 			glDisable(GL_BLEND);
@@ -137,7 +137,7 @@ main :: () {
 			// // glEnable(GL_DEPTH_TEST);
 
 			// use(*shader_solid);
-			// 	// for trnaslate(.{2, 0, 0}) 
+			// 	// for translate(.{2, 0, 0}) 
 			// 	draw_node_p(loaded_assets, root);
 			// glDepthFunc(GL_ALWAYS);
 			// glEnable(GL_BLEND);
@@ -151,33 +151,7 @@ main :: () {
 	}
 }
 
-SRC_VERT_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	Input_Vertice gen_vertice() {
-		vec3 points[8] = vec3[8](
-			vec3( 1, -1, -1), vec3( 1, -1,  1),
-			vec3(-1, -1,  1), vec3(-1, -1, -1),
-			vec3( 1,  1, -1), vec3( 1,  1,  1),
-			vec3(-1,  1,  1), vec3(-1,  1, -1)
-		);
-		vec3 normals[6] = vec3[6](
-			vec3( 0, -1,  0),
-			vec3( 0,  1,  0),
-			vec3( 1,  0,  0),
-			vec3( 0,  0,  1),
-			vec3(-1,  0,  0),
-			vec3( 0,  0, -1)
-		);
-		int indices[36] = int[36](
-			1, 2, 3, 7, 6, 5, 4, 5, 1, 5, 6, 2,
-			2, 6, 7, 0, 3, 7, 0, 1, 3, 4, 7, 5,
-			0, 4, 1, 1, 5, 2, 3, 2, 7, 4, 0, 7
-		);
-		vec3 point = points[indices[gl_VertexID]];
-		vec3 normal = normals[(gl_VertexID / 3) % 6];
-		return Input_Vertice(point, normal, vec2(0));
-	}
-GLSL);
-SRC_FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	layout(binding = 0) uniform sampler2D u_color;
 	in vec2 vo_uv;
 	out vec4 o_color;
@@ -190,25 +164,7 @@ SRC_FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	}
 GLSL);
 
-SRC_VERT_DEFAULT :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	layout (location = 0) in vec3 a_position;
-	layout (location = 1) in vec3 a_normal;
-	layout (location = 5) in vec2 a_uv_0;
-	Input_Vertice gen_vertice() {
-		return Input_Vertice(a_position, a_normal, a_uv_0);
-	}
-GLSL);
-SRC_VERT_SCREEN_QUAD :: #string GLSL
-	out vec2 vo_uv;
-	
-	void main() {
-		float points[12] = float[12](0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1);
-		vec2 uv = vec2(points[gl_VertexID << 1], points[(gl_VertexID << 1) | 1]);
-		vo_uv = uv;
-		gl_Position = vec4(uv * 2 - 1, 0, 1);
-	}
-GLSL
-SRC_FRAG_WEIGHTED_BLENDED :: #run incl(UBO_SCREEN_METRICS, UBO_MATERIAL, GLTF_TEXTURES, UBO_TIME_INFO, UBO_CAMERA_PROPERTIES, #string GLSL
+FRAG_WEIGHTED_BLENDED :: #run incl(UBO_SCREEN_METRICS, UBO_MATERIAL, GLTF_TEXTURES, UBO_TIME_INFO, UBO_CAMERA_PROPERTIES, #string GLSL
 	layout(binding = 6) uniform sampler2D u_depth;
 	uniform float u_alpha_scale = 1;
 
@@ -243,7 +199,7 @@ SRC_FRAG_WEIGHTED_BLENDED :: #run incl(UBO_SCREEN_METRICS, UBO_MATERIAL, GLTF_TE
 		o_reveal = color.a;
 	}
 GLSL);
-SRC_FRAG_SCREEN_PASS :: #string GLSL
+FRAG_SCREEN_PASS :: #string GLSL
 	uniform float u_time;
 
 	in vec2 vo_uv;

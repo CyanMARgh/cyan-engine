@@ -19,7 +19,7 @@ rects :: () {
 	atoms_painter := make_atoms_painter(Rect, MAX_POINTS);
 	defer deinit(*atoms_painter);
 
-	shader_quads_v1 := compile_shader_vf(SRC_VERT_ANY_SIZE_RECTS, SRC_FRAG_WHITE);
+	shader_quads_v1 := compile_shader_vf(VERT_ANY_SIZE_RECTS, FRAG_WHITE);
 	defer deinit(*shader_quads_v1);
 
 	area :: (using rect : Rect) -> float {
@@ -85,7 +85,7 @@ points :: () {
 	init_resources(.{800, 600}); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	shader_quads_v1 := compile_shader_vf(SRC_VERT_WITH_INSTANCING, SRC_FRAG_WHITE);
+	shader_quads_v1 := compile_shader_vf(VERT_WITH_INSTANCING, FRAG_WHITE);
 	defer deinit(*shader_quads_v1);
 	atoms_painter := make_atoms_painter(struct {position : Vector2;}, MAX_POINTS);
 	defer deinit(*atoms_painter);
@@ -109,7 +109,7 @@ points :: () {
 	}
 }
 
-SRC_VERT_WITH_INSTANCING :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, #string GLSL
+VERT_WITH_INSTANCING :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, #string GLSL
 	layout (location = 0) in vec2 a_center;
 	out vec3 vo_color;
 	void main() {
@@ -121,7 +121,7 @@ SRC_VERT_WITH_INSTANCING :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES,
 		vo_color = rad > 0 ? vec3(1, 1, 1) : vec3(0, 0, 1);
 	}
 GLSL);
-SRC_VERT_ANY_SIZE_RECTS :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, #string GLSL
+VERT_ANY_SIZE_RECTS :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, #string GLSL
 	layout (location = 0) in vec2 a_left_bottom;
 	layout (location = 1) in vec2 a_right_top;
 
@@ -134,7 +134,7 @@ SRC_VERT_ANY_SIZE_RECTS :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, 
 		vo_color = vec3(1);
 	}
 GLSL);
-SRC_VERT_NO_INSTANCING :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+VERT_NO_INSTANCING :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	uniform vec2 u_center;
 	out vec3 vo_color;
 	void main() {
@@ -144,7 +144,7 @@ SRC_VERT_NO_INSTANCING :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 		vo_color = vec3(1, 0, 0);
 	}
 GLSL);
-SRC_FRAG_WHITE :: #string GLSL
+FRAG_WHITE :: #string GLSL
 	in vec3 vo_color;
 	out vec4 o_color;
 	void main() {

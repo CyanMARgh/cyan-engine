@@ -32,3 +32,5 @@ using True_Type :: #import,dir "truetype";
 #load "fonts.jai";
 #load "shader_includes.jai";
 #load "cubemap.jai";
+#load "ssbo.jai";
+#load "text_painter.jai";

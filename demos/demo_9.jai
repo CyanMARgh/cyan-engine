@@ -35,11 +35,11 @@ main :: () {
 	dstheader_gbuffer_ms := dstheader(fb_gbuffer_ms);
 	srcheader_gbuffer := srcheader(fb_gbuffer);
 
-	shader_gbuf_msaa := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer_ms), dstheader(fb_gbuffer), SRC_FRAG_GBUF_MSAA)); defer deinit(*shader_gbuf_msaa);
-	shader_cube := compile_shader_vf(SRC_VERT_CUBE, incl(dstheader_gbuffer_ms, SRC_FRAG_EXTENDED)); defer deinit(*shader_cube);
-	shader_default := compile_shader_vf(SRC_VERT_DEFAULT, incl(dstheader_gbuffer_ms, SRC_FRAG_EXTENDED)); defer deinit(*shader_default);
-	shader_ssao := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheader_gbuffer, SRC_FRAG_SSAO)); defer deinit(*shader_ssao);
-	shader_blur := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheaders(fb_gbuffer, fb_ssao_raw), SRC_FRAG_BLUR)); defer deinit(*shader_blur);
+	shader_gbuf_msaa := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer_ms), dstheader(fb_gbuffer), FRAG_GBUF_MSAA)); defer deinit(*shader_gbuf_msaa);
+	shader_cube := compile_shader_vf(VERT_CUBE, incl(dstheader_gbuffer_ms, FRAG_EXTENDED)); defer deinit(*shader_cube);
+	shader_default := compile_shader_vf(VERT_DEFAULT, incl(dstheader_gbuffer_ms, FRAG_EXTENDED)); defer deinit(*shader_default);
+	shader_ssao := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader_gbuffer, FRAG_SSAO)); defer deinit(*shader_ssao);
+	shader_blur := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheaders(fb_gbuffer, fb_ssao_raw), FRAG_BLUR)); defer deinit(*shader_blur);
 
 	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
@@ -97,6 +97,7 @@ main :: () {
 			use(*shader_ssao);
 				bind_as_source(fb_gbuffer);
 				bind_sampler(4, noise_texture);
+				set(*shader_ssao, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				draw_empty_mesh(6);
 		bind_default_target();
 			use(*shader_blur);
@@ -107,52 +108,10 @@ main :: () {
 	}
 }
 
-SRC_VERT_DEFAULT :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	layout (location = 0) in vec3 a_position;
-	layout (location = 1) in vec3 a_normal;
-	layout (location = 5) in vec2 a_uv_0;
-	Input_Vertice gen_vertice() {
-		return Input_Vertice(a_position, a_normal, a_uv_0);
-	}
-GLSL);
-SRC_VERT_SCREEN_QUAD :: #string GLSL
-	out vec2 vo_uv;
-	
-	void main() {
-		float points[12] = float[12](0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1);
-		vec2 uv = vec2(points[gl_VertexID << 1], points[(gl_VertexID << 1) | 1]);
-		vo_uv = uv;
-		gl_Position = vec4(uv * 2 - 1, 0, 1);
-	}
-GLSL
-SRC_VERT_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	Input_Vertice gen_vertice() {
-		vec3 points[8] = vec3[8](
-			vec3( 1, -1, -1), vec3( 1, -1,  1),
-			vec3(-1, -1,  1), vec3(-1, -1, -1),
-			vec3( 1,  1, -1), vec3( 1,  1,  1),
-			vec3(-1,  1,  1), vec3(-1,  1, -1)
-		);
-		vec3 normals[6] = vec3[6](
-			vec3( 0, -1,  0),
-			vec3( 0,  1,  0),
-			vec3( 1,  0,  0),
-			vec3( 0,  0,  1),
-			vec3(-1,  0,  0),
-			vec3( 0,  0, -1)
-		);
-		int indices[36] = int[36](
-			1, 2, 3, 7, 6, 5, 4, 5, 1, 5, 6, 2,
-			2, 6, 7, 0, 3, 7, 0, 1, 3, 4, 7, 5,
-			0, 4, 1, 1, 5, 2, 3, 2, 7, 4, 0, 7
-		);
-		vec3 point = points[indices[gl_VertexID]];
-		vec3 normal = normals[(gl_VertexID / 3) % 6];
-		return Input_Vertice(point, normal, vec2(0));
-	}
-GLSL);
-SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
+FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
 	layout(binding = 4) uniform sampler2D u_noise;
+
+	uniform vec2 u_ssao_quality;
 
 	in vec2 vo_uv;
 	out vec4 o_color;
@@ -163,7 +122,7 @@ SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTI
 	}
 
 	void main() {
-		vec2 noise_scale = u_window_size / 4; 
+		vec2 noise_scale = u_ssao_quality / 4; 
 		vec2 uv = vo_uv;
 
 		float depth = texture(u_depth, uv).x;
@@ -204,7 +163,7 @@ SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTI
 	}
 GLSL);
 
-SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
+FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
 	uniform vec2 u_ssao_quality = vec2(1);
@@ -241,7 +200,7 @@ SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 	}
 GLSL);
 
-SRC_FRAG_GBUF_MSAA :: #run incl(UBO_SCREEN_METRICS, #string GLSL
+FRAG_GBUF_MSAA :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 	vec4 texture_average(sampler2DMS source, vec2 uv, int samples) {
 		vec4 result = vec4(0);
 		for(int i = 0; i < samples; i++) {

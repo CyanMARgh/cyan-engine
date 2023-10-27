@@ -8,6 +8,10 @@
 main :: () {
 	defer report_memory_leaks();
 	init_resources(); defer deinit_resources();
+	// cursor := glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+	// glfwSetCursor(backend_state.window, cursor);
+	// defer glfwDestroyCursor(cursor);
+
 	init_default_graphics(); defer deinit_default_graphics();
 
 	fb_gbuffer_ms := make_framebuffer(backend_state.window_metrics.size, 
@@ -44,22 +48,22 @@ main :: () {
 	// dstheader_gbuffer := dstheader(fb_gbuffer);
 	default_target := dstheader(fb_gbuffer_ms);
 
-	// shader_gbuf_msaa := compile_shader_vf(incl(defs("NOFLIP"), SRC_VERT_SCREEN_QUAD), incl(srcheader(fb_gbuffer_ms), dstheader(fb_gbuffer), SRC_FRAG_GBUF_MSAA)); defer deinit(*shader_gbuf_msaa);
-	shader_default := compile_shader_vf(SRC_VERT_DEFAULT, incl(default_target, SRC_FRAG_EXTENDED)); defer deinit(*shader_default);
-	shader_background_cubemap := compile_shader_vf(SRC_VERT_SCREEN_CUBE, incl(default_target, SRC_FRAG_BACKGROUND_CUBEMAP)); defer deinit(*shader_background_cubemap);
-	shader_sphere := compile_shader_vf(SRC_VERT_SPHERE, incl(default_target, SRC_FRAG_EXTENDED)); defer deinit(*shader_sphere);
+	// shader_gbuf_msaa := compile_shader_vf(incl(defs("NOFLIP"), VERT_SCREEN_QUAD), incl(srcheader(fb_gbuffer_ms), dstheader(fb_gbuffer), FRAG_GBUF_MSAA)); defer deinit(*shader_gbuf_msaa);
+	shader_default := compile_shader_vf(VERT_DEFAULT, incl(default_target, FRAG_EXTENDED)); defer deinit(*shader_default);
+	shader_background_cubemap := compile_shader_vf(VERT_SCREEN_CUBE, incl(default_target, FRAG_BACKGROUND_CUBEMAP)); defer deinit(*shader_background_cubemap);
+	shader_sphere := compile_shader_vf(VERT_SPHERE, incl(default_target, FRAG_EXTENDED)); defer deinit(*shader_sphere);
 
-	// shader_cube := compile_shader_vf(SRC_VERT_CUBE, incl(dstheader_gbuffer_ms, SRC_FRAG_EXTENDED)); defer deinit(*shader_cube);
-	// shader_default := compile_shader_vf(SRC_VERT_DEFAULT, incl(dstheader_gbuffer_ms, SRC_FRAG_EXTENDED)); defer deinit(*shader_default);
-	PP_SRC_FRAG_SSAO := incl(dstheader(fb_ssao_raw), srcheader(fb_gbuffer_ms), SRC_FRAG_SSAO);
-	// print(PP_SRC_FRAG_SSAO);
-	shader_ssao := compile_shader_vf(incldefs("NOFLIP", SRC_VERT_SCREEN_QUAD), PP_SRC_FRAG_SSAO); defer deinit(*shader_ssao);
-	shader_blur := compile_shader_vf(incl(defs("NOFLIP"), SRC_VERT_SCREEN_QUAD), incl(srcheaders(fb_gbuffer_ms, fb_ssao_raw), SRC_FRAG_BLUR)); defer deinit(*shader_blur);
-	shader_light_pass := compile_shader_vf(incl(defs("NOFLIP"), SRC_VERT_SCREEN_QUAD), incl(srcheader(fb_gbuffer_ms), SRC_FRAG_LIGHT_PASS)); defer deinit(*shader_light_pass);
+	// shader_cube := compile_shader_vf(VERT_CUBE, incl(dstheader_gbuffer_ms, FRAG_EXTENDED)); defer deinit(*shader_cube);
+	// shader_default := compile_shader_vf(VERT_DEFAULT, incl(dstheader_gbuffer_ms, FRAG_EXTENDED)); defer deinit(*shader_default);
+	PP_FRAG_SSAO := incl(dstheader(fb_ssao_raw), srcheader(fb_gbuffer_ms), FRAG_SSAO);
+	// print(PP_FRAG_SSAO);
+	shader_ssao := compile_shader_vf(incldefs("NOFLIP", VERT_SCREEN_QUAD), PP_FRAG_SSAO); defer deinit(*shader_ssao);
+	shader_blur := compile_shader_vf(incl(defs("NOFLIP"), VERT_SCREEN_QUAD), incl(srcheaders(fb_gbuffer_ms, fb_ssao_raw), FRAG_BLUR)); defer deinit(*shader_blur);
+	shader_light_pass := compile_shader_vf(incl(defs("NOFLIP"), VERT_SCREEN_QUAD), incl(srcheader(fb_gbuffer_ms), FRAG_LIGHT_PASS)); defer deinit(*shader_light_pass);
 
-	shader_show_texture := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incldefs("FIRST_CHANNEL", SRC_FRAG_SHOW_TEXTURE)); defer deinit(*shader_show_texture);
-	shader_show_cubemap := compile_shader_vf(SRC_VERT_SCREEN_CUBE, SRC_FRAG_SHOW_CUBEMAP); defer deinit(*shader_show_cubemap);
-	// shader_default := compile_shader_vf(SRC_VERT_DEFAULT, SRC_FRAG_REFLECTIVE_TEXTURED); defer deinit(*shader_default);
+	shader_show_texture := compile_shader_vf(VERT_SCREEN_QUAD, incldefs("FIRST_CHANNEL", FRAG_SHOW_TEXTURE)); defer deinit(*shader_show_texture);
+	shader_show_cubemap := compile_shader_vf(VERT_SCREEN_CUBE, FRAG_SHOW_CUBEMAP); defer deinit(*shader_show_cubemap);
+	// shader_default := compile_shader_vf(VERT_DEFAULT, FRAG_REFLECTIVE_TEXTURED); defer deinit(*shader_default);
 
 	material_default : Material;
 	send_to_gpu(*material_default);
@@ -75,7 +79,7 @@ main :: () {
 	texture_brdf := make_texture_buffer(BRDF_RESOLUTION, BRDF_RESOLUTION, .{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 0, GL_TEXTURE_2D});
 	defer deinit(*texture_brdf);
 	{
-		shader_prerender := compile_shader_vf(incl(defs("NOFLIP"), SRC_VERT_SCREEN_QUAD), SRC_FRAG_BRDF);
+		shader_prerender := compile_shader_vf(incl(defs("NOFLIP"), VERT_SCREEN_QUAD), FRAG_BRDF);
 		defer deinit(*shader_prerender);
 
 		prerender_texture_fbo : u32;
@@ -94,8 +98,8 @@ main :: () {
 	prerendered_cubemap := make_cubemap(PCM_RESOLUTION, PCM_RESOLUTION, true);
 	defer deinit(*prerendered_cubemap);
 	{
-		// shader_prerender := compile_shader_vf(SRC_VERT_TO_CUBEMAP, SRC_FRAG_SHOW_UV);
-		shader_prerender := compile_shader_vf(SRC_VERT_TO_CUBEMAP, SRC_FRAG_PREFILTER);
+		// shader_prerender := compile_shader_vf(VERT_TO_CUBEMAP, FRAG_SHOW_UV);
+		shader_prerender := compile_shader_vf(VERT_TO_CUBEMAP, FRAG_PREFILTER);
 		defer deinit(*shader_prerender);
 
 		prerendered_cubemap_fbo : u32;
@@ -222,20 +226,7 @@ main :: () {
 	}
 }
 
-SRC_VERT_SCREEN_QUAD :: #string GLSL
-	out vec2 vo_uv;
-	void main() {
-		float points[12] = float[12](0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1);
-		vec2 _uv = vec2(points[gl_VertexID << 1], points[(gl_VertexID << 1) | 1]);
-		#ifndef NOFLIP
-		vo_uv = vec2(_uv.x, 1 - _uv.y);
-		#else
-		vo_uv = _uv;
-		#endif
-		gl_Position = vec4(_uv * 2 - 1, 0, 1);
-	}
-GLSL
-SRC_FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	layout(binding = 0) uniform sampler2D u_color;
 	in vec2 vo_uv;
 	out vec4 o_color;
@@ -247,7 +238,7 @@ SRC_FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 		#endif
 	}
 GLSL);
-SRC_VERT_SCREEN_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+VERT_SCREEN_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	out vec3 vo_direction;
 	void main() {
 		vec3 points[8] = vec3[8](
@@ -266,7 +257,7 @@ SRC_VERT_SCREEN_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 		gl_Position = u_mat_p * u_mat_r * vec4(p, 1);
 	}
 GLSL);
-SRC_FRAG_SHOW_CUBEMAP :: #run incl(UBO_TIME_INFO, #string GLSL
+FRAG_SHOW_CUBEMAP :: #run incl(UBO_TIME_INFO, #string GLSL
 	layout(binding = 0) uniform samplerCube skybox;
 	in vec3 vo_direction;
 	out vec4 o_color;
@@ -274,7 +265,7 @@ SRC_FRAG_SHOW_CUBEMAP :: #run incl(UBO_TIME_INFO, #string GLSL
 		o_color = texture(skybox, vo_direction);
 	}
 GLSL);
-SRC_FRAG_BACKGROUND_CUBEMAP :: #string GLSL
+FRAG_BACKGROUND_CUBEMAP :: #string GLSL
 	layout(binding = 0) uniform samplerCube skybox;
 	in vec3 vo_direction;
 	void main() {
@@ -300,7 +291,7 @@ SRC_FRAG_BACKGROUND_CUBEMAP :: #string GLSL
 		#endif
 	}
 GLSL
-SRC_FRAG_REFLECTIVE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0, #string GLSL
+FRAG_REFLECTIVE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0, #string GLSL
 	layout(binding = 7) uniform samplerCube u_skybox;
 	layout(binding = 6) uniform sampler2D u_brdf;
 
@@ -322,7 +313,7 @@ SRC_FRAG_REFLECTIVE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, SRC_SHADI
 		o_color = vec4(result_color, 1.0);
 	}
 GLSL);
-SRC_FRAG_REFLECTIVE_TEXTURED :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, UBO_MAT_M, GLTF_TEXTURES, SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0, #string GLSL
+FRAG_REFLECTIVE_TEXTURED :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, UBO_MAT_M, GLTF_TEXTURES, SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0, #string GLSL
 	layout(binding = 7) uniform samplerCube u_skybox;
 	layout(binding = 6) uniform sampler2D u_brdf;
 
@@ -429,37 +420,7 @@ SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0 :: #string GLSL
 	}
 GLSL;
 
-SRC_VERT_SPHERE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	uniform uint u_rows;
-	uniform uint u_columns;
-	const float PI = 3.14159265359;
-
-	Input_Vertice gen_vertice() {
-		uint subid = gl_VertexID % 6;
-		uint quad_column = (gl_VertexID / 6) % u_columns;
-		uint quad_row = gl_VertexID / (6 * u_columns);
-		uint offsets[12] = uint[12](0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 2);
-		uint row = quad_row + offsets[subid << 1];
-		uint column = quad_column + offsets[(subid << 1) | 1];
-
-		float yaw = 2 * PI * float(column) / float(u_columns);
-		float pitch = PI * float(row) / float(u_rows);
-
-		vec3 pos0 = vec3(sin(yaw) * sin(pitch), cos(pitch), cos(yaw) * sin(pitch));
-
-		return Input_Vertice(pos0, pos0, vec2(0));
-	}
-GLSL);
-
-SRC_VERT_DEFAULT :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	layout (location = 0) in vec3 a_position;
-	layout (location = 1) in vec3 a_normal;
-	layout (location = 5) in vec2 a_uv_0;
-	Input_Vertice gen_vertice() {
-		return Input_Vertice(a_position, a_normal, a_uv_0);
-	}
-GLSL);
-SRC_FRAG_GBUF_MSAA :: #run incl(UBO_SCREEN_METRICS, #string GLSL
+FRAG_GBUF_MSAA :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 	vec4 texture_average(sampler2DMS source, vec2 uv, int samples) {
 		vec2 screen_size = u_screen_size;
 		vec4 result = vec4(0);
@@ -505,7 +466,7 @@ SRC_FRAG_GBUF_MSAA :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 	}
 GLSL);
 
-SRC_VERT_TO_CUBEMAP :: #string GLSL
+VERT_TO_CUBEMAP :: #string GLSL
 	uniform uint u_part_id;
 
 	out vec3 vo_direction; 
@@ -531,7 +492,7 @@ SRC_VERT_TO_CUBEMAP :: #string GLSL
 		vo_direction = forward + up * (uv.y * 2 - 1) + right * (uv.x * 2 - 1);
 	}
 GLSL
-SRC_FRAG_SHOW_UV :: #string GLSL
+FRAG_SHOW_UV :: #string GLSL
 	layout(binding = 0) uniform samplerCube u_environment_map;
 	in vec3 vo_direction;
 	out vec3 o_color;
@@ -541,7 +502,7 @@ SRC_FRAG_SHOW_UV :: #string GLSL
 	}
 GLSL
 
-SRC_FRAG_PREFILTER :: #string GLSL
+FRAG_PREFILTER :: #string GLSL
 	layout(binding = 0) uniform samplerCube u_environment_map;
 	uniform float u_roughness;
 	// const float u_roughness = .1;
@@ -605,7 +566,7 @@ SRC_FRAG_PREFILTER :: #string GLSL
 		o_color = prefiltered_color;
 	}
 GLSL
-SRC_FRAG_BRDF :: #string GLSL
+FRAG_BRDF :: #string GLSL
 	const float PI = 3.14159265359;
 	float RadicalInverse_VdC(uint bits)  {
 		bits = (bits << 16u) | (bits >> 16u);
@@ -691,7 +652,7 @@ SRC_FRAG_BRDF :: #string GLSL
 	}
 GLSL
 
-SRC_FRAG_LIGHT_PASS :: #run incl(UBO_TIME_INFO, UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0, #string GLSL
+FRAG_LIGHT_PASS :: #run incl(UBO_TIME_INFO, UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, SRC_SHADING_MODEL_REFLECTIVE_TEXTURED_V0, #string GLSL
 	layout(binding = 6) uniform sampler2D u_brdf;
 	layout(binding = 7) uniform samplerCube u_skybox;
 	layout(binding = 8) uniform sampler2D u_ambient_occlusion;
@@ -744,7 +705,7 @@ SRC_FRAG_LIGHT_PASS :: #run incl(UBO_TIME_INFO, UBO_SCREEN_METRICS, UBO_CAMERA_P
 	}
 GLSL);
 
-SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
+FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
 	layout(binding = 6) uniform sampler2D u_noise;
 
 	uniform vec2 u_ssao_quality;
@@ -802,7 +763,7 @@ SRC_FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTI
 	}
 GLSL);
 
-SRC_FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
+FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
 

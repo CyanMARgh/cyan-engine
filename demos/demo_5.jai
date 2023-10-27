@@ -24,9 +24,9 @@ main :: () {
 	init_default_graphics(); defer deinit_default_graphics();
 
 	#if USE_SHADER_FIRE {
-		shader_particles := compile_shader_vf(SRC_VERT_PARTICLE, SRC_FRAG_PARTICLE_FIRE);
+		shader_particles := compile_shader_vf(VERT_PARTICLE, FRAG_PARTICLE_FIRE);
 	} else {
-		shader_particles := compile_shader_vf(SRC_VERT_PARTICLE, SRC_FRAG_PARTICLE_CHECKERS);
+		shader_particles := compile_shader_vf(VERT_PARTICLE, FRAG_PARTICLE_CHECKERS);
 	}
 
 	defer deinit(*shader_particles);
@@ -168,7 +168,7 @@ emit :: (using particle_system : *Particle_System, count : int, center_0 : Vecto
 	}
 }
 
-SRC_VERT_PARTICLE :: #run incl(UBO_SCREEN_METRICS, #string GLSL
+VERT_PARTICLE :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 	layout (location = 0) in vec3 a_position;
 	layout (location = 1) in float a_time;
 	layout (location = 2) in vec3 a_base_color;
@@ -191,7 +191,7 @@ SRC_VERT_PARTICLE :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 		gl_Position = vec4((a_position.xy + uv * size) * vec2(1. / u_width_over_height, 1.), 0, 1);
 	}
 GLSL);
-SRC_FRAG_PARTICLE_FIRE :: #string GLSL
+FRAG_PARTICLE_FIRE :: #string GLSL
 	in struct VO {
 		vec2 uv;
 		vec3 base_color;
@@ -203,7 +203,7 @@ SRC_FRAG_PARTICLE_FIRE :: #string GLSL
 		o_color = vec4(vo.base_color, 1 - r);
 	}
 GLSL
-SRC_FRAG_PARTICLE_CHECKERS :: #string GLSL
+FRAG_PARTICLE_CHECKERS :: #string GLSL
 	in struct VO {
 		vec2 uv;
 		vec3 base_color;

@@ -167,3 +167,9 @@ clear_target :: (flags : GLenum, channels : ..[4]float) {
 		glClearBufferfv(GL_COLOR, xx it_index, it.data);
 	}
 }
+clear_target_v4 :: (flags : GLenum, channels : ..Vector4) {
+	glClear(flags);
+	for channels {
+		glClearBufferfv(GL_COLOR, xx it_index, xx *it);
+	}
+}

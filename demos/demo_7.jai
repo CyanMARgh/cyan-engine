@@ -14,7 +14,7 @@ main :: () {
 	atoms_painter := make_atoms_painter(Circle, MAX_POINTS);
 	defer deinit(*atoms_painter);
 
-	shader_circles := compile_shader_vf(SRC_VERT_CIRCLE, SRC_FRAG_CIRCLE);
+	shader_circles := compile_shader_vf(VERT_CIRCLE, FRAG_CIRCLE);
 	defer deinit(*shader_circles);
 
 	layer :u32= 0;
@@ -53,7 +53,7 @@ main :: () {
 	}
 }
 
-SRC_VERT_CIRCLE :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, #string GLSL
+VERT_CIRCLE :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, #string GLSL
 	layout (location = 0) in vec2 a_center;
 	layout (location = 1) in float a_radius;
 	layout (location = 2) in vec3 a_color;
@@ -75,7 +75,7 @@ SRC_VERT_CIRCLE :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, #string 
 		vo = VO(a_color, uv);
 	}
 GLSL);
-SRC_FRAG_CIRCLE :: #string GLSL
+FRAG_CIRCLE :: #string GLSL
 	in struct VO {
 		vec3 color;
 		vec2 uv;

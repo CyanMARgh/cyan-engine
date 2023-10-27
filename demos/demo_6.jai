@@ -8,25 +8,25 @@ main :: () {
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	framebuffer := make_framebuffer(1280, 720, 
+	fb_gbuffer := make_framebuffer(1280, 720, 
 		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
 		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
 		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
 		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
 		samples = 8
 	);
+	defer deinit(*fb_gbuffer);
 
-	shader_default := compile_shader_vf(SRC_VERT_DEFAULT, incl(dstheader(framebuffer), SRC_FRAG_EXTENDED));
+	shader_default := compile_shader_vf(VERT_DEFAULT, incl(dstheader(fb_gbuffer), FRAG_EXTENDED));
 	defer deinit(*shader_default);
-	// shader_screen_pass := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheader(framebuffer), SRC_FRAG_SCREEN_SHOW_COLOR));
-	shader_screen_pass := compile_shader_vf(SRC_VERT_SCREEN_QUAD, SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED);
+	shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), FRAG_SCREEN_SHOW_COLOR));
+	// shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED);
 	defer deinit(*shader_screen_pass);
 
 	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
 
-	// framebuffer := make_framebuffer(1280, 720, .NORMAL | .POSITION, 8);
-	defer deinit(*framebuffer);
+	// fb_gbuffer := make_framebuffer(1280, 720, .NORMAL | .POSITION, 8);
 
 	graphics_state.default_camera.linear_speed *= .3;
 
@@ -46,50 +46,26 @@ main :: () {
 		}
 		update_default_camera();
 
-		set_size(*framebuffer, backend_state.window_metrics.size);
-		// print("->% x %\n", framebuffer.width, framebuffer.height);
+		set_size(*fb_gbuffer, backend_state.window_metrics.size);
 
-		bind_as_target(framebuffer);
-			glClearBufferfv(GL_COLOR, 0, float.[.7, .8, .9,  1].data);
-			glClearBufferfv(GL_COLOR, 1, float.[ 0,  0,  0,  1].data);
-			glClearBufferfv(GL_COLOR, 2, float.[ 0,  0,  0,  1].data);
-			glClear(GL_DEPTH_BUFFER_BIT);
+		bind_as_target(fb_gbuffer);
+			clear_target(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, .[.7, .8, .9, 1], .[0, 0, 0, 0], .[0, 0, 0, 0]);
 
 			glEnable(GL_DEPTH_TEST);
-			use(*shader_default);
-			draw_node(loaded_assets, root);
+				use(*shader_default);
+					draw_node(loaded_assets, root);
+			glDisable(GL_DEPTH_TEST);
 
 		bind_default_target();
-
-		glClear(GL_DEPTH_BUFFER_BIT);
-		use(*shader_screen_pass);
-			set(*shader_screen_pass, "u_time", backend_state.current_time);
-			bind_as_source(framebuffer);
-		draw_empty_mesh(6);
+			use(*shader_screen_pass);
+				bind_as_source(fb_gbuffer);
+			draw_empty_mesh(6);
 
 		check_gl_error();
 	}
 }
 
-SRC_VERT_DEFAULT :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	layout (location = 0) in vec3 a_position;
-	layout (location = 1) in vec3 a_normal;
-	layout (location = 5) in vec2 a_uv_0;
-	Input_Vertice gen_vertice() {
-		return Input_Vertice(a_position, a_normal, a_uv_0);
-	}
-GLSL);
-SRC_VERT_SCREEN_QUAD :: #string GLSL
-	out vec2 vo_uv;
-	
-	void main() {
-		float points[12] = float[12](0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1);
-		vec2 uv = vec2(points[gl_VertexID << 1], points[(gl_VertexID << 1) | 1]);
-		vo_uv = uv;
-		gl_Position = vec4(uv * 2 - 1, 0, 1);
-	}
-GLSL
-SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #run incl(UBO_SCREEN_METRICS, #string GLSL
+FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 	layout(binding = 0) uniform sampler2DMS u_depth;
 	layout(binding = 1) uniform sampler2DMS u_color;
 	layout(binding = 2) uniform sampler2DMS u_normal;
@@ -134,7 +110,7 @@ SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #run incl(UBO_SCREEN_METRICS, #string
 		o_color = vec4(color, 1);
 	}
 GLSL);
-SRC_FRAG_SCREEN_SHOW_COLOR :: #string GLSL
+FRAG_SCREEN_SHOW_COLOR :: #string GLSL
 	uniform float u_time;
 
 	in vec2 vo_uv;
@@ -144,27 +120,25 @@ SRC_FRAG_SCREEN_SHOW_COLOR :: #string GLSL
 		vec2 uv = vo_uv;
 		vec3 color;
 
-		color = vec3(fract(vo_uv), 0);
-
-		// if(uv.y > .5) {
-		// 	uv.y = uv.y * 2 - 1;
-		// 	if(uv.x > .5) {
-		// 		uv.x = uv.x * 2 - 1;
-		// 		color = texture(u_color, uv).xyz;
-		// 	} else {
-		// 		uv.x = uv.x * 2;
-		// 		color = texture(u_depth, uv).xxx;
-		// 	}
-		// } else {
-		// 	uv.y = uv.y * 2;
-		// 	if(uv.x > .5) {
-		// 		uv.x = uv.x * 2 - 1;
-		// 		color = texture(u_normal, uv).xyz;
-		// 	} else {
-		// 		uv.x = uv.x * 2;
-		// 		color = texture(u_position, uv).xyz;
-		// 	}
-		// }
+		if(uv.y > .5) {
+			uv.y = uv.y * 2 - 1;
+			if(uv.x > .5) {
+				uv.x = uv.x * 2 - 1;
+				color = texture(u_color, uv).xyz;
+			} else {
+				uv.x = uv.x * 2;
+				color = texture(u_depth, uv).xxx;
+			}
+		} else {
+			uv.y = uv.y * 2;
+			if(uv.x > .5) {
+				uv.x = uv.x * 2 - 1;
+				color = texture(u_normal, uv).xyz;
+			} else {
+				uv.x = uv.x * 2;
+				color = texture(u_position, uv).xyz;
+			}
+		}
 		o_color = vec4(color, 1);
 	}
 GLSL

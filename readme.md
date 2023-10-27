@@ -5,6 +5,7 @@ modules:
 - GLTF_Parser module: https://github.com/kooparse/gltf_parser (30 aug, 2023) 
 - GLFW module: https://github.com/kujukuju/JaiGLFW (5 jun, 2023)
 - Extra_Containers module: https://github.com/CyanMARgh/extra-containers (11 aug 2023)
+- (optioanl) ffmpeg installed, for rendering to file
 
 Place them in jai/modules folder or the folder where this module is located. and compie demo with
 ```
@@ -26,5 +27,7 @@ demos list:
 - 7: same as 3, but with right depth order
 - 8: font loading
 - 9: SSAO
-- 1-12: PBR (different variants)
+- 11-12: PBR (different variants)
 - 13: semitransparent surfaces (weighted, blended)
+- 14: edge detection
+- 15: characters painting

@@ -9,7 +9,7 @@ main :: () {
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	shader_default := compile_shader_vf(SRC_VERT_DEFAULT, incl(DSTHEADER_DEFAULT, SRC_FRAG_EXTENDED));
+	shader_default := compile_shader_vf(VERT_DEFAULT, incl(DSTHEADER_DEFAULT, FRAG_EXTENDED));
 	defer deinit(*shader_default);
 	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
@@ -35,11 +35,3 @@ main :: () {
 		draw_node(loaded_assets, root);
 	}
 }
-SRC_VERT_DEFAULT :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	layout (location = 0) in vec3 a_position;
-	layout (location = 1) in vec3 a_normal;
-	layout (location = 5) in vec2 a_uv_0;
-	Input_Vertice gen_vertice() {
-		return Input_Vertice(a_position, a_normal, a_uv_0);
-	}
-GLSL);

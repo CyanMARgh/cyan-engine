@@ -7,8 +7,8 @@
 coordinate_screen_to_world :: (position : Vector2) -> Vector2 {
 	using backend_state.window_metrics;
 	return .{
-		width * (2 * position.x / width - 1) / height, 
-		1 - 2 * position.y / height
+		width * (2 * position.x / backend_state.window_metrics.width - 1) / backend_state.window_metrics.height, 
+		1 - 2 * position.y / backend_state.window_metrics.height
 	};
 }
 
@@ -21,7 +21,7 @@ main :: () {
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	shader_particles := compile_shader_vf(SRC_VERT_PARTICLE, SRC_FRAG_PARTICLE);
+	shader_particles := compile_shader_vf(VERT_PARTICLE, FRAG_PARTICLE);
 	defer deinit(*shader_particles);
 
 	particle_system : Particle_System;
@@ -92,7 +92,7 @@ emit :: (using particle_system : *Particle_System, count := 100, center := Vecto
 	}
 }
 
-SRC_VERT_PARTICLE :: #run incl(UBO_SCREEN_METRICS, #string GLSL
+VERT_PARTICLE :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 	layout (location = 0) in float a_time;
 	layout (location = 1) in vec2 a_position;
 	layout (location = 2) in float a_velocity;
@@ -107,7 +107,7 @@ SRC_VERT_PARTICLE :: #run incl(UBO_SCREEN_METRICS, #string GLSL
 		gl_Position = vec4((a_position + uv * size) * vec2(1. / u_width_over_height, 1.), 0, 1);
 	}
 GLSL);
-SRC_FRAG_PARTICLE :: #string GLSL
+FRAG_PARTICLE :: #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;	
 	void main() {

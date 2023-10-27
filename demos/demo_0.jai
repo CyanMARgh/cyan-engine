@@ -5,10 +5,10 @@
 
 main :: () {
 	// defer report_memory_leaks();
-	init_resources(.{100, 100}); defer deinit_resources();
+	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	shader_triangle := compile_shader_vf(SRC_VERT_CAMERA_UBO_TEST, SRC_FRAG_TRIANGLE);
+	shader_triangle := compile_shader_vf(VERT_CAMERA_UBO_TEST, FRAG_TRIANGLE);
 	defer deinit(*shader_triangle);
 	mesh_triangle := get_mesh(SRC_MESH_TRIANGLE);
 	defer deinit(*mesh_triangle);
@@ -46,7 +46,7 @@ SRC_MESH_TRIANGLE :: Mesh_Source.{
 		-1, -1,  0,
 	]
 };
-SRC_VERT_TRIANGLE :: #string GLSL
+VERT_TRIANGLE :: #string GLSL
 	layout (location = 0) in vec3 a_pos;
 
 	out Vert_Out {
@@ -58,7 +58,7 @@ SRC_VERT_TRIANGLE :: #string GLSL
 		vert_out.position = a_pos;
 	}
 GLSL
-SRC_FRAG_TRIANGLE :: #string GLSL
+FRAG_TRIANGLE :: #string GLSL
 	in Vert_Out {
 		vec3 position;
 	} vert_out;
@@ -69,7 +69,7 @@ SRC_FRAG_TRIANGLE :: #string GLSL
 		o_color = vec4(vert_out.position, 1);
 	}
 GLSL
-SRC_VERT_CAMERA_UBO_TEST :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+VERT_CAMERA_UBO_TEST :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	struct Input_Vertice {
 		vec3 position;
 		vec3 normal;

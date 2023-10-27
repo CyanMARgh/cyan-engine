@@ -69,3 +69,36 @@ uppercase :: (src : string) -> string {
 	}
 	return res;
 }
+
+hex2f3 :: (code : u32) -> Vector3 {
+	b := code & 0xFF;
+	g := (code >> 8) & 0xFF;
+	r := (code >> 16) & 0xFF;
+	return .{xx r, xx g, xx b} / 255.;
+}
+hex2f4 :: (code : u32) -> Vector4 {
+	b := code & 0xFF;
+	g := (code >> 8) & 0xFF;
+	r := (code >> 16) & 0xFF;
+	return .{xx r, xx g, xx b, 255.} / 255.;
+}
+
+align_of :: ($T : Type) -> int {
+	o : struct { b : bool; t : T; }
+	return xx(cast(u64) *o.t - cast(u64) *o.b);
+}
+
+Rect :: struct {
+	left_top : Vector2;
+	right_bottom : Vector2;
+	#place left_top;
+	left, top, right, bottom : float;
+}
+add_gap :: (using r : Rect, gap : float) -> Rect {
+	return .{.{left + gap, top + gap}, .{right - gap, bottom - gap}};
+}
+inside :: (position : Vector2, zone : Rect) -> bool {
+	return 
+		zone.left_top.x <= position.x && position.x <= zone.right_bottom.x &&
+		zone.left_top.y <= position.y && position.y <= zone.right_bottom.y;
+}

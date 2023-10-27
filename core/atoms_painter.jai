@@ -58,7 +58,7 @@ deinit :: (using atoms_painter : *Atoms_Painter($base_struct)) {
 push :: (using atoms_painter : *Atoms_Painter($base_struct), object : base_struct) {
 	if buffer.count < max_points then array_add(*buffer, object);
 }
-draw_simple :: (using atoms_painter : *Atoms_Painter($base_struct), vertices_per_instance : u32) {
+draw_simple :: (using atoms_painter : *Atoms_Painter($base_struct), vertices_per_instance : u32 = 6) {
 	commit_buffer(atoms_painter);
 	draw(atoms_painter, vertices_per_instance);
 	reset(atoms_painter);

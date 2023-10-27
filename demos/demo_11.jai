@@ -8,11 +8,11 @@ main :: () {
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	shader_show_texture := compile_shader_vf(SRC_VERT_SCREEN_SPACE, SRC_FRAG_SHOW_TEXTURE);
+	shader_show_texture := compile_shader_vf(VERT_SCREEN_QUAD, FRAG_SHOW_TEXTURE);
 	defer deinit(*shader_show_texture);
-	shader_show_cubemap := compile_shader_vf(SRC_VERT_SCREEN_CUBE, SRC_FRAG_SHOW_CUBEMAP);
+	shader_show_cubemap := compile_shader_vf(VERT_SCREEN_CUBE, FRAG_SHOW_CUBEMAP);
 	defer deinit(*shader_show_cubemap);
-	shader_sphere := compile_shader_vf(SRC_VERT_SPHERE, SRC_FRAG_REFLECTIVE);
+	shader_sphere := compile_shader_vf(VERT_SPHERE, FRAG_REFLECTIVE);
 	defer deinit(*shader_sphere);
 
 	source_cubemap, ok := load_cubemap_from_file("res/yokohama2/", "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg");
@@ -23,7 +23,7 @@ main :: () {
 	texture_brdf := make_texture_buffer(BRDF_RESOLUTION, BRDF_RESOLUTION, .{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 0, GL_TEXTURE_2D});
 	defer deinit(*texture_brdf);
 	{
-		shader_prerender := compile_shader_vf(incl(defs("NOFLIP"), SRC_VERT_SCREEN_SPACE), SRC_FRAG_BRDF);
+		shader_prerender := compile_shader_vf(incl(defs("NOFLIP"), VERT_SCREEN_QUAD), FRAG_BRDF);
 		defer deinit(*shader_prerender);
 
 		prerender_texture_fbo : u32;
@@ -42,8 +42,8 @@ main :: () {
 	prerendered_cubemap := make_cubemap(PCM_RESOLUTION, PCM_RESOLUTION, true);
 	defer deinit(*prerendered_cubemap);
 	{
-		// shader_prerender := compile_shader_vf(SRC_VERT_TO_CUBEMAP, SRC_FRAG_SHOW_UV);
-		shader_prerender := compile_shader_vf(SRC_VERT_TO_CUBEMAP, SRC_FRAG_PREFILTER);
+		// shader_prerender := compile_shader_vf(VERT_TO_CUBEMAP, FRAG_SHOW_UV);
+		shader_prerender := compile_shader_vf(VERT_TO_CUBEMAP, FRAG_PREFILTER);
 		defer deinit(*shader_prerender);
 
 		prerendered_cubemap_fbo : u32;
@@ -130,20 +130,7 @@ main :: () {
 	}
 }
 
-SRC_VERT_SCREEN_SPACE :: #string GLSL
-	out vec2 vo_uv;
-	void main() {
-		float points[12] = float[12](0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1);
-		vec2 _uv = vec2(points[gl_VertexID << 1], points[(gl_VertexID << 1) | 1]);
-		#ifndef NOFLIP
-		vo_uv = vec2(_uv.x, 1 - _uv.y);
-		#else
-		vo_uv = _uv;
-		#endif
-		gl_Position = vec4(_uv * 2 - 1, 0, 1);
-	}
-GLSL
-SRC_FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	layout(binding = 0) uniform sampler2D u_color;
 	in vec2 vo_uv;
 	out vec4 o_color;
@@ -151,7 +138,7 @@ SRC_FRAG_SHOW_TEXTURE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 		o_color = texture(u_color, vo_uv);
 	}
 GLSL);
-SRC_VERT_SCREEN_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+VERT_SCREEN_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	out vec3 vo_direction;
 	void main() {
 		vec3 points[8] = vec3[8](
@@ -170,7 +157,7 @@ SRC_VERT_SCREEN_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 		gl_Position = u_mat_p * u_mat_r * vec4(p, 1);
 	}
 GLSL);
-SRC_FRAG_SHOW_CUBEMAP :: #run incl(UBO_TIME_INFO, #string GLSL
+FRAG_SHOW_CUBEMAP :: #run incl(UBO_TIME_INFO, #string GLSL
 	layout(binding = 0) uniform samplerCube skybox;
 	in vec3 vo_direction;
 	out vec4 o_color;
@@ -187,7 +174,7 @@ SRC_FRAG_SHOW_CUBEMAP :: #run incl(UBO_TIME_INFO, #string GLSL
 		// o_color = vec4(color, 1);
 	}
 GLSL);
-SRC_FRAG_REFLECTIVE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
+FRAG_REFLECTIVE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
 	layout(binding = 0) uniform samplerCube u_skybox;
 	layout(binding = 1) uniform sampler2D u_brdf;
 
@@ -219,30 +206,9 @@ SRC_FRAG_REFLECTIVE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string G
 		o_color = vec4(result_color, 1);
 	}
 GLSL);
-SRC_VERT_SPHERE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	uniform uint u_rows;
-	uniform uint u_columns;
-	const float PI = 3.14159265359;
-
-	Input_Vertice gen_vertice() {
-		uint subid = gl_VertexID % 6;
-		uint quad_column = (gl_VertexID / 6) % u_columns;
-		uint quad_row = gl_VertexID / (6 * u_columns);
-		uint offsets[12] = uint[12](0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 2);
-		uint row = quad_row + offsets[subid << 1];
-		uint column = quad_column + offsets[(subid << 1) | 1];
-
-		float yaw = 2 * PI * float(column) / float(u_columns);
-		float pitch = PI * float(row) / float(u_rows);
-
-		vec3 pos0 = vec3(sin(yaw) * sin(pitch), cos(pitch), cos(yaw) * sin(pitch));
-
-		return Input_Vertice(pos0, pos0, vec2(0));
-	}
-GLSL);
 
 
-SRC_VERT_TO_CUBEMAP :: #string GLSL
+VERT_TO_CUBEMAP :: #string GLSL
 	uniform uint u_part_id;
 
 	out vec3 vo_direction; 
@@ -268,7 +234,7 @@ SRC_VERT_TO_CUBEMAP :: #string GLSL
 		vo_direction = forward + up * (uv.y * 2 - 1) + right * (uv.x * 2 - 1);
 	}
 GLSL
-SRC_FRAG_SHOW_UV :: #string GLSL
+FRAG_SHOW_UV :: #string GLSL
 	layout(binding = 0) uniform samplerCube u_environment_map;
 	in vec3 vo_direction;
 	out vec3 o_color;
@@ -278,7 +244,7 @@ SRC_FRAG_SHOW_UV :: #string GLSL
 	}
 GLSL
 
-SRC_FRAG_PREFILTER :: #string GLSL
+FRAG_PREFILTER :: #string GLSL
 	layout(binding = 0) uniform samplerCube u_environment_map;
 	uniform float u_roughness;
 	// const float u_roughness = .1;
@@ -342,7 +308,7 @@ SRC_FRAG_PREFILTER :: #string GLSL
 		o_color = prefiltered_color;
 	}
 GLSL
-SRC_FRAG_BRDF :: #string GLSL
+FRAG_BRDF :: #string GLSL
 	const float PI = 3.14159265359;
 	float RadicalInverse_VdC(uint bits)  {
 		bits = (bits << 16u) | (bits >> 16u);

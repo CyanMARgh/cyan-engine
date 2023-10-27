@@ -19,15 +19,15 @@ main :: () {
 		// ,samples = 8
 	);
 	defer deinit(*fb_gbuffer);
-	shader_default := compile_shader_vf(SRC_VERT_DEFAULT, incl(dstheader(fb_gbuffer), SRC_FRAG_EXTENDED));
+	shader_default := compile_shader_vf(VERT_DEFAULT, incl(dstheader(fb_gbuffer), FRAG_EXTENDED));
 	defer deinit(*shader_default);
-	PP_SRC_FRAG_EXTENDED := incl(dstheader(fb_gbuffer), SRC_FRAG_EXTENDED);
-	// print_color("-> \n%\n", PP_SRC_FRAG_EXTENDED, color = .CYAN);
+	PP_FRAG_EXTENDED := incl(dstheader(fb_gbuffer), FRAG_EXTENDED);
+	// print_color("-> \n%\n", PP_FRAG_EXTENDED, color = .CYAN);
 
-	shader_sphere := compile_shader_vf(SRC_VERT_SPHERE, PP_SRC_FRAG_EXTENDED);
+	shader_sphere := compile_shader_vf(VERT_SPHERE, PP_FRAG_EXTENDED);
 	defer deinit(*shader_sphere);
-	shader_screen_pass := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), SRC_FRAG_SCREEN_SHOW_COLOR));
-	// shader_screen_pass := compile_shader_vf(SRC_VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED));
+	shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), FRAG_SCREEN_SHOW_COLOR));
+	// shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED));
 	defer deinit(*shader_screen_pass);
 
 	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
@@ -118,25 +118,7 @@ main :: () {
 }
 //TODO full-length shader compilation error repott or "..." at the end
 
-SRC_VERT_DEFAULT :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	layout (location = 0) in vec3 a_position;
-	layout (location = 1) in vec3 a_normal;
-	layout (location = 5) in vec2 a_uv_0;
-	Input_Vertice gen_vertice() {
-		return Input_Vertice(a_position, a_normal, a_uv_0);
-	}
-GLSL);
-SRC_VERT_SCREEN_QUAD :: #string GLSL
-	out vec2 vo_uv;
-	
-	void main() {
-		float points[12] = float[12](0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1);
-		vec2 uv = vec2(points[gl_VertexID << 1], points[(gl_VertexID << 1) | 1]);
-		vo_uv = uv;
-		gl_Position = vec4(uv * 2 - 1, 0, 1);
-	}
-GLSL
-SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #string GLSL
+FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
 
@@ -177,7 +159,7 @@ SRC_FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #string GLSL
 		o_color = vec4(color, 1);
 	}
 GLSL
-SRC_FRAG_SCREEN_SHOW_COLOR :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
+FRAG_SCREEN_SHOW_COLOR :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
 
@@ -293,7 +275,7 @@ SRC_FRAG_SCREEN_SHOW_COLOR :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #s
 	}
 GLSL);
 
-SRC_FRAG_SCREEN_SHOW_COLOR_V2 :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
+FRAG_SCREEN_SHOW_COLOR_V2 :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
 	const float PI = 3.14159265359;
@@ -318,28 +300,6 @@ SRC_FRAG_SCREEN_SHOW_COLOR_V2 :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO,
 
 	void main() {
 		o_color = vec4(1, 0, 0, 1);
-	}
-GLSL);
-
-SRC_VERT_SPHERE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
-	uniform uint u_rows;
-	uniform uint u_columns;
-	const float PI = 3.14159265359;
-
-	Input_Vertice gen_vertice() {
-		uint subid = gl_VertexID % 6;
-		uint quad_column = (gl_VertexID / 6) % u_columns;
-		uint quad_row = gl_VertexID / (6 * u_columns);
-		uint offsets[12] = uint[12](0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 2);
-		uint row = quad_row + offsets[subid << 1];
-		uint column = quad_column + offsets[(subid << 1) | 1];
-
-		float yaw = 2 * PI * float(column) / float(u_columns);
-		float pitch = PI * float(row) / float(u_rows);
-
-		vec3 pos0 = vec3(sin(yaw) * sin(pitch), cos(pitch), cos(yaw) * sin(pitch));
-
-		return Input_Vertice(pos0, pos0, vec2(0));
 	}
 GLSL);
 

@@ -21,8 +21,8 @@ DEBUG :: true;
 // TODO push target framebuffer metrics
 
 BUILD_AND_RUN_ALL :: false;
-TOTAL_DEMOS :: 14;
-DEMO_ID :: 12;
+TOTAL_DEMOS :: 18;
+DEMO_ID :: 17;
 
 #run {
 	set_build_options_dc(.{do_output = false});

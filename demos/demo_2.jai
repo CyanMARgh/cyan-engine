@@ -8,7 +8,7 @@ main :: () {
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	shader_show_texture := compile_shader_vf(SRC_VERT_SCREEN_SPACE, SRC_FRAG_SHOW_TEXTURE);
+	shader_show_texture := compile_shader_vf(VERT_SCREEN_SPACE, FRAG_SHOW_TEXTURE);
 	defer deinit(*shader_show_texture);
 	test_texture := load_texture_from_file("res/input_texture.png");
 	defer deinit(*test_texture);
@@ -34,7 +34,7 @@ main :: () {
 	}
 }
 
-SRC_VERT_SCREEN_SPACE :: #string GLSL
+VERT_SCREEN_SPACE :: #string GLSL
 	out vec2 uv;
 	void main() {
 		float points[12] = float[12](0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1);
@@ -43,7 +43,7 @@ SRC_VERT_SCREEN_SPACE :: #string GLSL
 		gl_Position = vec4(_uv * 2 - 1, 0, 1);
 	}
 GLSL
-SRC_FRAG_SHOW_TEXTURE :: #string GLSL
+FRAG_SHOW_TEXTURE :: #string GLSL
 	layout(binding = 0) uniform sampler2D u_color;
 	in vec2 uv;
 	out vec4 o_color;

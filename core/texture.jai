@@ -6,6 +6,9 @@ Image :: struct {
 	#place bytecount;
 	bytes : []u8;
 }
+at :: (using image : Image, x : s32, y : s32) -> u32 {
+	return pixels[x + y * width];
+}
 load_image :: (path : string, expected_layers :u8= 3) -> Image {
 	using image : Image;
 	actual_source_layers : s32;

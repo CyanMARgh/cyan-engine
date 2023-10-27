@@ -2,6 +2,7 @@ GL_REQUIRED_VERSION_MAJOR :: 4;
 GL_REQUIRED_VERSION_MINOR :: 3;
 
 init_resources :: (initial_size := ivec2.{1280, 720}) {
+	print("\e[0m");
 	glfwInit();
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -53,8 +54,10 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 	mouse_button_callback :: (window : *GLFWwindow, button : s32, action : s32, mods : s32) #c_call {
 		if action == 1 {
 			mouse_buttons_down[button] = true;
+			mouse_buttons_pressed[button] = true;
 		} else if action == 0 {
 			mouse_buttons_down[button] = false;
+			mouse_buttons_released[button] = true;
 		}
 		push_context ctx {
 			push(*window_events, .{
@@ -65,6 +68,16 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 					mods = mods
 				}
 			});
+			// if button == GLFW_MOUSE_BUTTON_LEFT {
+			// 	if action == GLFW_PRESS {
+			// 		backend_state.left_mouse_state = .DOWN;
+			// 	} else if action == GLFW_RELEASE {
+			// 		backend_state.left_mouse_state = .DOWN;
+			// 	}
+			// }
+
+			//TODO update mouse button state in backend_state
+			// print("mbe = %\n", action);
 		}
 	}
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -113,7 +126,7 @@ for_expansion :: (using window_cycle : Window_Cycle, $body : Code, flags : For_F
 	}
 
 	cycle_length := 1000. * 2 * PI;
-	backend_state.delta_time = 1. / target_fps;
+	backend_state.target_delta_time, backend_state.delta_time = 1. / target_fps;
 	backend_state.current_time = 0.;
 
 	ffmpeg : FFMPEG;
@@ -140,9 +153,15 @@ for_expansion :: (using window_cycle : Window_Cycle, $body : Code, flags : For_F
 	while !glfwWindowShouldClose(window) {
 		// for check_time() 
 		{
+			for * mouse_buttons_pressed it.* = false;
+			for * mouse_buttons_released it.* = false;
 			glfwPollEvents();
 			cursor_delta = new_cursor_position - cursor_position;			
 			cursor_position = new_cursor_position;
+			if lmb_pressed() {
+				dragg_start = backend_state.cursor_position;
+			}
+
 			set_value(*ubo_window_metrics, window_metrics);
 			set_value(*ubo_time_info, time_info);
 
@@ -151,6 +170,7 @@ for_expansion :: (using window_cycle : Window_Cycle, $body : Code, flags : For_F
 			#insert body;			
 			glFlush();
 		}
+
 		// for check_time() 
 		{
 			glfwSwapBuffers(window);
@@ -189,36 +209,6 @@ for_expansion :: (using window_cycle : Window_Cycle, $body : Code, flags : For_F
 				print("fps = %\n", fps_log_period / delay);
 			}			
 		}
-
-		// actual_delta_time = xx to_float64_seconds(time_end - time_begin);
-		// remained_time := max(target_delta_time - actual_delta_time, 0.);
-		// if capture_video {
-		// 	delta_time = target_delta_time;
-		// } else {			
-		// 	delta_time = max(target_delta_time, actual_delta_time);
-		// }
-		// backend_state.delta_time = delta_time;
-		// // sleep_milliseconds(xx(remained_time * 1000));
-		// current_time = fmod_cycling(current_time + max(actual_delta_time, target_delta_time), cycle_length);
-
-		// frame_count += 1;
-		// actual_delta_time_sum += actual_delta_time;
-		// actual_delta_time_sum2 += actual_delta_time * actual_delta_time;
-		// if frame_count == fps_log_period {
-		// 	avg_time := actual_delta_time_sum / frame_count;
-		// 	avg_time2 := actual_delta_time_sum2 / frame_count;
-		// 	sigma_time := sqrt(avg_time2 - avg_time * avg_time);
-		// 	fps := 1 / avg_time;
-		// 	sigma_fps := (sigma_time / (avg_time * avg_time)) / sqrt(cast(float)frame_count);
-		// 	if print_statistical_fps print("fps = % +- %\n", fps, sigma_fps);
-
-		// 	frame_count = 0;
-		// 	actual_delta_time_sum = 0.;
-		// 	actual_delta_time_sum2 = 0.;
-		// }
-		// cursor_delta = .{};
-		// is_first_frame = false;
-		// window_resized_this_frame = false;
 	}
 }
 Window_Event :: struct {
@@ -260,7 +250,16 @@ switch_cursor_lock :: () {
 	is_cursor_locked ^= true;
 	centerize_cursor();
 }
-
+lmb_pressed :: () -> bool {
+	return mouse_buttons_pressed[GLFW_MOUSE_BUTTON_LEFT];
+}
+lmb_released :: () -> bool {
+	return mouse_buttons_released[GLFW_MOUSE_BUTTON_LEFT];
+}
+lmb_down :: () -> bool {
+	return mouse_buttons_down[GLFW_MOUSE_BUTTON_LEFT];
+}
+// Mouse_State :: enum u8 { UP; PUSH; DOWN; RELEASE; }
 backend_state : struct {
 	window : *GLFWwindow;
 	ctx : Context;
@@ -271,10 +270,15 @@ backend_state : struct {
 
 	new_cursor_position, cursor_position : Vector2;
 	cursor_delta : Vector2;
+	dragg_start : Vector2;
 
 	window_events : SB_Queue(Window_Event, 100);
 	mouse_buttons_down : [GLFW_MOUSE_BUTTON_LAST]bool;
+	mouse_buttons_pressed : [GLFW_MOUSE_BUTTON_LAST] bool;
+	mouse_buttons_released : [GLFW_MOUSE_BUTTON_LAST] bool;
 	keys_down : [1024]bool;
+	// left_mouse_state := Mouse_State.UP;
+
 	// keys_events : [1024]bool;
 	window_metrics : struct {
 		width, height : s32;
@@ -287,7 +291,8 @@ backend_state : struct {
 
 	using time_info : struct {
 		current_time : float;
-		delta_time : float;		
+		delta_time : float;
+		target_delta_time : float;	
 	}
 	ubo_time_info : UBO;
 };
