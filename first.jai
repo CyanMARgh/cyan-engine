@@ -20,9 +20,9 @@ DEBUG :: true;
 // TODO save texture binary/as file
 // TODO push target framebuffer metrics
 
-BUILD_AND_RUN_ALL :: false;
+BUILD_AND_RUN_ALL :: true;
 TOTAL_DEMOS :: 18;
-DEMO_ID :: 17;
+DEMO_ID :: 6;
 
 #run {
 	set_build_options_dc(.{do_output = false});

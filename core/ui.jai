@@ -62,6 +62,7 @@ VERT_SCREEN_SCALE_RECTS :: #run incl(UBO_SCREEN_METRICS, UBO_CAMERA_PROPERTIES, 
 		vo_color = a_color;
 	}
 GLSL);
+#scope_file
 FRAG_SINGLE_COLOR :: #string GLSL
 	in vec3 vo_color;
 	out vec4 o_color;
@@ -69,8 +70,9 @@ FRAG_SINGLE_COLOR :: #string GLSL
 		o_color = vec4(vo_color, 1);
 	}
 GLSL
+#scope_export
 
-UI_State :: struct {
+using ui_state : struct { //++++
 	ui_quads_painter : Atoms_Painter(Rect_Colored);
 	ui_text_painter : Text_Painter;
 	ui_shader_quads, ui_shader_text : Shader;
@@ -81,8 +83,7 @@ UI_State :: struct {
 	ui_primitive_layer : u32;
 
 	ui_interacted_this_frame := false;
-}
-using ui_state : UI_State;
+} //++++
 
 ui_draw_text_line :: (text : string, zone : Rect, color : Vector3) {
 	write_line_in_rect(*ui_text_painter, text, zone, color, ui_primitive_layer);

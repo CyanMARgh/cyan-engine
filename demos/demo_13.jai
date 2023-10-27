@@ -97,14 +97,12 @@ main :: () {
 			clear_target(GL_DEPTH_BUFFER_BIT, .[ 0,  0,  0,  0], .[ 1,  1,  1,  1]);
 
 			use(*shader_cube_transparent);
-				for scale(.{.1, 1.5, 1.5}) {
-					material_default.base_color_factor = .{1, .8, .8, .4};
-					draw_cube_base();
-					material_default.base_color_factor = .{.8, 1, .8, .4};
-					for translate(.{.4, 0, 0}) draw_cube_base();
-					material_default.base_color_factor = .{.8, .8, 1, .4};
-					for translate(.{-.4, 0, 0}) draw_cube_base();
-				}
+				material_default.base_color_factor = .{1, .8, .8, .4};
+				for scale(.{.1, 1.5, 1.5}) draw_cube_base();
+				material_default.base_color_factor = .{.8, 1, .8, .4};
+				for translate(.{.4, 0, 0}) for scale(.{.1, 1.5, 1.5}) draw_cube_base();
+				material_default.base_color_factor = .{.8, .8, 1, .4};
+				for translate(.{-.4, 0, 0}) for scale(.{.1, 1.5, 1.5}) draw_cube_base();
 			for *shader_transparent {
 				set("u_alpha_scale", .2);
 				for translate(.{-1.5, 0, 0}) draw_node_p(loaded_assets, root);

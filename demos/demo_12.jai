@@ -217,7 +217,7 @@ main :: () {
 				draw_empty_mesh(6);
 		bind_default_target();
 			use(*shader_light_pass);
-				bind_as_source(fb_gbuffer_ms);
+				bind_as_sources(fb_gbuffer_ms);
 				bind_sampler(6, texture_brdf);
 				bind_sampler(7, prerendered_cubemap);
 				bind_sampler(8, fb_ssao_blurred.textures[0]);
