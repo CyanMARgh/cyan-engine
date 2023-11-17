@@ -23,7 +23,7 @@ main :: () {
 	shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED);
 	defer deinit(*shader_screen_pass);
 
-	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
 
 	// fb_gbuffer := make_framebuffer(1280, 720, .NORMAL | .POSITION, 8);
@@ -53,7 +53,7 @@ main :: () {
 
 			glEnable(GL_DEPTH_TEST);
 				use(*shader_default);
-					draw_node(loaded_assets, root);
+					draw_all_roots(loaded_assets);
 			glDisable(GL_DEPTH_TEST);
 
 		bind_default_target();

@@ -35,13 +35,16 @@ main :: () {
 	dstheader_gbuffer_ms := dstheader(fb_gbuffer_ms);
 	srcheader_gbuffer := srcheader(fb_gbuffer);
 
+	PP_FRAG_SSAO := incl(srcheader_gbuffer, FRAG_SSAO);
+	// print("%", PP_FRAG_SSAO);
+
 	shader_gbuf_msaa := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer_ms), dstheader(fb_gbuffer), FRAG_GBUF_MSAA)); defer deinit(*shader_gbuf_msaa);
 	shader_cube := compile_shader_vf(VERT_CUBE, incl(dstheader_gbuffer_ms, FRAG_EXTENDED)); defer deinit(*shader_cube);
 	shader_default := compile_shader_vf(VERT_DEFAULT, incl(dstheader_gbuffer_ms, FRAG_EXTENDED)); defer deinit(*shader_default);
-	shader_ssao := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader_gbuffer, FRAG_SSAO)); defer deinit(*shader_ssao);
+	shader_ssao := compile_shader_vf(VERT_SCREEN_QUAD, PP_FRAG_SSAO); defer deinit(*shader_ssao);
 	shader_blur := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheaders(fb_gbuffer, fb_ssao_raw), FRAG_BLUR)); defer deinit(*shader_blur);
 
-	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
 	noise_texture := make_noise_texture(4, 4);
 	defer deinit(*noise_texture);
@@ -64,7 +67,7 @@ main :: () {
 			draw_empty_mesh(36);
 			glCullFace(GL_BACK);
 		use(*shader_default);
-			draw_node(loaded_assets, root);
+			draw_all_roots(loaded_assets);
 		glDisable(GL_DEPTH_TEST);
 	}
 	for window_cycle(fps_log_period = 100, print_statistical_fps = true) {
@@ -142,6 +145,7 @@ FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTIES, 
 		int samples_count = kernel_size;
 		for(int i = 0; i < samples_count; i++) {
 			vec3 offset = TBN * kernel_values[i];
+			// vec3 offset = kernel_values[i];
 			vec3 sample_pos = frag_pos + offset;
 
 			vec4 P = u_mat_trp * vec4(sample_pos, 1);
@@ -252,8 +256,8 @@ gen_kernel :: () -> string {
 	vec3 kernel_values[%1] = vec3[%1](
 	GLSL, KERNEL_SIZE, KERNEL_RADIUS, KERNEL_BIAS);
 	for i : 0..KERNEL_SIZE-1 {
-		r := i / cast(float)KERNEL_SIZE;
-		r = (r * r) * .9 + .1;
+		r := (i + 1) / cast(float)KERNEL_SIZE;
+		r = (r * r);// * .9 + .1;
 		v := Vector3.{0, 2, 0};
 		while length(v) > 1 {
 			for * v.component it.* = random_get_within_range(-1, 1);

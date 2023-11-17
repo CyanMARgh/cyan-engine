@@ -1,10 +1,9 @@
 #import,dir "../core";
-// #import "Basic"()(MEMORY_DEBUGGER = true);
-#import "Basic";
+#import "Basic"()(MEMORY_DEBUGGER = true);
 #import "GL";
 
 main :: () {
-	// defer report_memory_leaks();
+	defer report_memory_leaks();
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 

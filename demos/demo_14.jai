@@ -45,7 +45,7 @@ main :: () {
 	// shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, incl(FRAG_SCREEN_REMOVE_CLUSTERS));
 	defer deinit(*shader_screen_pass);
 
-	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
 	// loaded_assets, root := load_assets("./res/truck/CesiumMilkTruck.gltf");
 	defer deinit(*loaded_assets);
 
@@ -94,7 +94,7 @@ main :: () {
 
 			glEnable(GL_DEPTH_TEST);
 			use(*shader_default);
-				draw_node(loaded_assets, root);
+				draw_all_roots(loaded_assets);
 			glDisable(GL_DEPTH_TEST);
 
 		bind_as_target(fb_depth_filtered);

@@ -9,7 +9,8 @@ Loaded_Assets :: struct {
 	// skins        : [] GLTF_Skin;
 	// cameras      : [] GLTF_Camera;
 	// lights       : [] GLTF_Light;
-	// animations   : [] GLTF_Animation;
+	animations	: [] Animation;
+	roots 		: [] int;
 }
 deinit :: (using loaded_assets : *Loaded_Assets) {
 	for * primitive_groups deinit(it);
@@ -20,6 +21,9 @@ deinit :: (using loaded_assets : *Loaded_Assets) {
 	array_free(textures);
 	for * materials deinit(it);
 	array_free(materials);
+	for * animations deinit(it);
+	array_free(animations);
+	array_free(roots);
 }
 
 Primitive :: struct {
@@ -112,6 +116,10 @@ Object_Node :: struct {
 	parent := -1;
 	world_transform : Matrix4;
 	local_transform : Matrix4;
+	
+	translation : Vector3;
+	scale := Vector3.{1, 1, 1};
+	rotation : Quaternion;
 
 	primitive_group := -1;
 
@@ -119,17 +127,29 @@ Object_Node :: struct {
 }
 load_nodes :: (loaded_assets : *Loaded_Assets, gltf_data : GLTF_Data) {
 	loaded_assets.nodes = NewArray(gltf_data.nodes.count, Object_Node);
+
+	roots : [..]int;
 	for * loaded_assets.nodes {
 		using node := gltf_data.nodes[it_index];
+		// print("node #% = %\n\n", it_index, node);
 		it.* = .{
 			name,
 			parent,
 			world_transform,
 			local_transform,
+
+			.{component = translation},
+			.{component = scale},
+			.{component = rotation},
+
 			mesh,
 			array_copy(children)
 		};
+		if it.parent == -1 {
+			array_add(*roots, it_index);
+		}
 	}
+	loaded_assets.roots = roots;
 }
 get_sampler :: (id : int, gltf_data : GLTF_Data) -> GLTF_Sampler {
 	if id == -1 return .{};
@@ -285,16 +305,163 @@ load_materials :: (loaded_assets : *Loaded_Assets, gltf_data : GLTF_Data, textur
 	}
 	return true;
 }
+Animation :: struct {
+	Channel :: struct {
+		node : int;
+		property : GLTF_Target_Property; 
+		// TRANSLATION, ROTATION, SCALE, WEIGHTS
+		interpolation : GLTF_Interpolation;
+		// LINEAR, STEP, CUBICSPLINE
+		timestamps : []float; //TODO maybe make shared
+		values : []float;
+	}
+	channels : []Channel;
+	delay : float;
+}
+
+deinit :: (using channel : *Animation.Channel) {
+	array_free(timestamps);
+	array_free(values);
+}
+deinit :: (using animation : *Animation) {
+	for * channels deinit(it);
+	array_free(channels);
+}
+
+load_animations :: (loaded_assets : *Loaded_Assets, gltf_data : GLTF_Data) {
+	load_animation :: (gltf_animation : GLTF_Animation) -> Animation #expand {
+		load_channel :: (gltf_channel : GLTF_Channel) -> Animation.Channel #expand {
+			channel : Animation.Channel;
+			channel.node = gltf_channel.target.node;
+			channel.property = gltf_channel.target.property;
+			sampler := gltf_animation.samplers[gltf_channel.sampler];
+			channel.interpolation = sampler.interpolation;
+
+			timestamps : [..]float;
+			values : [..]float;
+			read_buffer_from_accessor(*gltf_data, gltf_data.accessors[sampler.input], *timestamps);
+			read_buffer_from_accessor(*gltf_data, gltf_data.accessors[sampler.output], *values);
+			channel.timestamps = timestamps;
+			channel.values = values;
+			assert(timestamps.count > 0);
+			// assert compare sizes
+			return channel;
+		}
+		animation : Animation;
+		animation.channels = NewArray(gltf_animation.channels.count, Animation.Channel);
+		for gltf_animation.channels {
+			channel := load_channel(it);
+			animation.channels[it_index] = channel;
+			animation.delay = max(animation.delay, channel.timestamps[channel.timestamps.count - 1]);
+		}
+		return animation;
+	}
+	loaded_assets.animations = NewArray(gltf_data.animations.count, Animation);
+	for gltf_data.animations {
+		loaded_assets.animations[it_index] = load_animation(it);
+	}
+}
+
+interpolate :: (t : float, t0 : float, t1 : float, v0 : float, v1 : float, interpolation : GLTF_Interpolation) -> float {
+	assert(t0 <= t && t <= t1);
+	if interpolation == .STEP {
+		return v0;
+	} else if interpolation == .LINEAR {
+		return v0 + (t - t0) * (v1 - v0) / (t1 - t0);
+	} else {
+		assert(false, "not supported yet");
+		return 0;
+	}
+}
+interpolate :: (dest : *float, timestamps : []float, values : []float, interpolation : GLTF_Interpolation, dims : int, time : float) {
+	assert(timestamps.count * dims == values.count);
+	if time <= timestamps[0] {
+		for i : 0..dims-1 {
+			dest[i] = values[i];
+		}
+		return;
+	} 
+	if time >= timestamps[timestamps.count - 1] {
+		for i : 0..dims-1 {
+			dest[i] = values[dims * (timestamps.count - 1) + i];
+		}
+		return;
+	}
+
+	left, right := 0, timestamps.count - 1;
+	while right > left + 1 {
+		center := (left + right) / 2;
+		tc := timestamps[center];
+		if tc > time {
+			right = center;
+		} else {
+			left = center;
+		}
+	}
+	for i : 0..dims-1 {
+		dest[i] = interpolate(time, timestamps[left], timestamps[right], values[left * dims + i], values[right * dims + i], interpolation);
+	}
+}
+interpolate :: (dest : *$T, using channel : Animation.Channel, time : float) {
+	#if (T == Vector4) || (T == [4]float) || (T == Quaternion) {
+		DIMS :: 4;
+		assert(property == .ROTATION);
+	} else #if T == Vector3 || T == [3]float {
+		DIMS :: 3;
+		assert(property == .SCALE || property == .TRANSLATION);
+	} else {
+		DIMS :: 0;
+		#assert false;
+	}
+	interpolate(xx dest, channel.timestamps, channel.values, channel.interpolation, DIMS, time);
+}
+
+apply_animation :: (loaded_assets : *Loaded_Assets, animation_id : int, time : float) {
+	for loaded_assets.animations[animation_id].channels {
+		// using it;
+		node := *loaded_assets.nodes[it.node];
+		if it.property == {
+			case .TRANSLATION;
+			interpolate(*node.translation, it, time);
+			// print("node.translation = %\n", node.translation);
+			case .ROTATION;
+			interpolate(*node.rotation, it, time);
+			normalize_or_identity(*node.rotation);
+			// print("node.rotation = %\n", node.rotation);
+			case .SCALE;
+			interpolate(*node.scale, it, time);			
+			// print("node.scale = %\n", node.scale);
+		}
+		node.local_transform = 
+			make_translation_matrix4(node.translation)
+			 *
+			rotation_matrix(Matrix4, node.rotation)
+
+			;
+	}
+}
 
 draw_node :: (using loaded_assets : Loaded_Assets, i : int, extra_transform := Matrix4_Identity) {
 	node := nodes[i];
+	// print("local_transform")
+	this_object_transform := extra_transform * node.local_transform;
 	if node.primitive_group != -1 {
-		set_model_transform(extra_transform * node.world_transform);
+		set_model_transform(graphics_state.scene_translation * this_object_transform);
 		draw(primitive_groups[node.primitive_group], loaded_assets);
 	}
-	for node.children draw_node(loaded_assets, it, extra_transform);
+	for node.children draw_node(loaded_assets, it, this_object_transform);
 }
-load_assets :: (source : string) -> Loaded_Assets, root:int {
+
+draw_root :: (using loaded_assets : Loaded_Assets, id : int) {
+	draw_node(loaded_assets, roots[id]);
+}
+draw_all_roots :: (using loaded_assets : Loaded_Assets) {
+	for roots {
+		draw_node(loaded_assets, it);
+	}
+}
+
+load_assets :: (source : string) -> Loaded_Assets {
 	loaded_assets : Loaded_Assets;
 	gltf_data := gltf_parse_file(source);
 	defer gltf_free(*gltf_data);
@@ -305,14 +472,9 @@ load_assets :: (source : string) -> Loaded_Assets, root:int {
 	deinit(*texture_table);
 	load_primitive_groups(*loaded_assets, gltf_data);
 	load_nodes(*loaded_assets, gltf_data);
+	load_animations(*loaded_assets, gltf_data);
 
-	root := -1;
-	for loaded_assets.nodes {
-		if it.parent == -1 {
-			root = it_index;
-		}
-	}
-	return loaded_assets, root;
+	return loaded_assets;
 }
 
 

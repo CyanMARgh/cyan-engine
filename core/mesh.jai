@@ -125,6 +125,19 @@ draw :: (using mesh : Mesh, mode := GL_TRIANGLES, actual_size :u32= 0xFFFFFFFF) 
 	}
 	glBindVertexArray(0);
 }
+draw_instanced :: (using mesh : Mesh, instances : u32, mode := GL_TRIANGLES, actual_size :u32= 0xFFFFFFFF) {
+	glBindVertexArray(vao);	
+	if mesh_type & .EBO {
+		glDrawElementsInstanced(xx mode, ifx actual_size == 0xFFFFFFFF then indices_count else actual_size, GL_UNSIGNED_INT, null, instances);
+	} else if mesh_type & .VBO {
+		glDrawArraysInstanced(xx mode, 0, ifx actual_size == 0xFFFFFFFF then points_count else actual_size, instances);
+	} else {
+		assert(actual_size != 0xFFFFFFFF);
+		glDrawArraysInstanced(xx mode, 0, actual_size, instances);
+	}
+	glBindVertexArray(0);
+}
+
 deinit :: (using mesh : *Mesh) {
 	glDeleteVertexArrays(1, *vao);
 	if mesh_type & .VBO {

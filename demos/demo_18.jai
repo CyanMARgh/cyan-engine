@@ -10,7 +10,13 @@ main :: () {
 
 	shader_default := compile_shader_vf(VERT_DEFAULT, incl(DSTHEADER_DEFAULT, FRAG_EXTENDED));
 	defer deinit(*shader_default);
-	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
+	// loaded_assets := load_assets("./res/animated_cube/AnimatedCube.gltf");
+	loaded_assets := load_assets("./res/animated_cube_2/BoxAnimated.gltf");
+	print("nodes:\n");
+	for loaded_assets.nodes print("%\n\n", it);
+	print("animations:\n");
+	for loaded_assets.animations print("%\n\n", it);
+	// print("%\n", loaded_assets.animations);
 	defer deinit(*loaded_assets);
 
 	glEnable(GL_CULL_FACE);
@@ -27,10 +33,20 @@ main :: () {
 			}
 		}
 		update_default_camera();
+
+		apply_animation(*loaded_assets, 0, fmod_cycling(current_time, loaded_assets.animations[0].delay));
+
 		glClearColor(.7, .8, .9, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		use(*shader_default);
-			draw_all_roots(loaded_assets);
+			// for transformation(rotm) 
+			{
+				// draw_root(loaded_assets, 0);
+				// draw_root(loaded_assets, 1);
+				draw_all_roots(loaded_assets);
+			}
 	}
 }
+
+

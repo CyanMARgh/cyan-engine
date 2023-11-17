@@ -126,7 +126,7 @@ main :: () {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffers(1, *prerendered_cubemap_fbo);
 	}
-	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
 
 	graphics_state.default_camera = .{
@@ -202,7 +202,7 @@ main :: () {
 				use(*shader_default);
 					bind_sampler(7, prerendered_cubemap);
 					bind_sampler(6, texture_brdf);
-					draw_node(loaded_assets, root);
+					draw_all_roots(loaded_assets);
 			glDisable(GL_DEPTH_TEST);
 		bind_as_target(fb_ssao_raw);
 			use(*shader_ssao);

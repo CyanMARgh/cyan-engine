@@ -21,17 +21,22 @@ main :: () {
 	defer deinit(*fb_gbuffer);
 	shader_default := compile_shader_vf(VERT_DEFAULT, incl(dstheader(fb_gbuffer), FRAG_EXTENDED));
 	defer deinit(*shader_default);
-	PP_FRAG_EXTENDED := incl(dstheader(fb_gbuffer), FRAG_EXTENDED);
-	// print_color("-> \n%\n", PP_FRAG_EXTENDED, color = .CYAN);
+	// print("OK\n");
 
+	PP_FRAG_EXTENDED := incl(dstheader(fb_gbuffer), FRAG_EXTENDED);
+	// print_color("-> \n%\n", VERT_SPHERE, color = .WHITE);
+	// print_color("-> \n%\n", PP_FRAG_EXTENDED, color = .CYAN);
 	shader_sphere := compile_shader_vf(VERT_SPHERE, PP_FRAG_EXTENDED);
 	defer deinit(*shader_sphere);
+	// print("OK\n");
 	shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), FRAG_SCREEN_SHOW_COLOR));
 	// shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED));
 	defer deinit(*shader_screen_pass);
+	// print("OK\n");
 
-	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
+	// print("OK\n");
 
 	Directional_Light :: struct {
 		direction := #run normalize(Vector3.{1, -1, -1}) #align 16;
@@ -104,7 +109,7 @@ main :: () {
 				}
 
 			use(*shader_default);
-				draw_node(loaded_assets, root);
+				draw_all_roots(loaded_assets);
 
 		bind_default_target();
 			glClear(GL_DEPTH_BUFFER_BIT);

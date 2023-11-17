@@ -67,12 +67,7 @@ GLTF_TEXTURES :: #string GLSL
 	layout(binding = 5) uniform sampler2D u_transmission;	
 GLSL
 
-VERTICE_INTERFACE_OUT :: #string GLSL
-	struct Input_Vertice {
-		vec3 position;
-		vec3 normal;
-		vec2 uv_0;
-	};
+VERTICE_INTERFACE_OUT :: #run incl(VERTICE_INTERFACE_STRUCT, #string GLSL
 	Input_Vertice gen_vertice();
 	out struct VO {
 		vec3 position;
@@ -89,7 +84,7 @@ VERTICE_INTERFACE_OUT :: #string GLSL
 			input_vertice.uv_0
 		);
 	}
-GLSL
+GLSL);
 DSTHEADER_DEFAULT :: #string GLSL
 	#define O_COLOR4
 	layout(location = 0) out vec4 o_color;
@@ -174,7 +169,7 @@ VERT_CUBE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, 
 		return Input_Vertice(point, normal, vec2(0));
 	}
 GLSL);
-VERT_SPHERE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
+VERT_SPHERE_GENERATOR :: #run incl(VERTICE_INTERFACE_STRUCT, #string GLSL
 	uniform uint u_rows;
 	uniform uint u_columns;
 	const float PI = 3.14159265359;
@@ -187,23 +182,40 @@ VERT_SPHERE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT
 		uint row = quad_row + offsets[subid << 1];
 		uint column = quad_column + offsets[(subid << 1) | 1];
 
-		float yaw = 2 * PI * float(column) / float(u_columns);
-		float pitch = PI * float(row) / float(u_rows);
+		vec2 uv = vec2(float(column) / float(u_columns), float(row) / float(u_rows));
+		float yaw = 2 * PI * uv.x;
+		float pitch = PI * uv.y;
 
 		vec3 pos0 = vec3(sin(yaw) * sin(pitch), cos(pitch), cos(yaw) * sin(pitch));
 
-		return Input_Vertice(pos0, pos0, vec2(0));
+		return Input_Vertice(pos0, pos0, uv);
 	}
 GLSL);
+VERT_SPHERE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, VERT_SPHERE_GENERATOR);
 
-VERT_DEFAULT :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, #string GLSL
+VERTICE_INTERFACE_STRUCT :: #string GLSL
+	#ifndef INPUT_VERTICE_STRUCT
+	#define INPUT_VERTICE_STRUCT
+		struct Input_Vertice {
+			vec3 position;
+			vec3 normal;
+			vec2 uv_0;
+		};
+	#endif
+GLSL
+
+VERT_DEFAULT_GENERATOR :: #run incl(VERTICE_INTERFACE_STRUCT, #string GLSL
 	layout (location = 0) in vec3 a_position;
 	layout (location = 1) in vec3 a_normal;
 	layout (location = 5) in vec2 a_uv_0;
+
 	Input_Vertice gen_vertice() {
 		return Input_Vertice(a_position, a_normal, a_uv_0);
 	}
 GLSL);
+
+VERT_DEFAULT :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, VERT_DEFAULT_GENERATOR);
+
 VERT_SCREEN_QUAD :: #string GLSL
 	out vec2 vo_uv;
 	
@@ -214,3 +226,6 @@ VERT_SCREEN_QUAD :: #string GLSL
 		gl_Position = vec4(uv * 2 - 1, 0, 1);
 	}
 GLSL
+
+
+

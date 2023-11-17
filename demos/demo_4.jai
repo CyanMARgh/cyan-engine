@@ -4,16 +4,12 @@
 #import "GL";
 #import "Random";
 
-coordinate_screen_to_world :: (position : Vector2) -> Vector2 {
-	using backend_state.window_metrics;
+cursor_world_position :: () -> Vector2 {
+	position := backend_state.cursor_position;
 	return .{
-		width * (2 * position.x / backend_state.window_metrics.width - 1) / backend_state.window_metrics.height, 
+		backend_state.window_metrics.width * (2 * position.x / backend_state.window_metrics.width - 1) / backend_state.window_metrics.height, 
 		1 - 2 * position.y / backend_state.window_metrics.height
 	};
-}
-
-cursor_world_position :: () -> Vector2 {
-	return coordinate_screen_to_world(backend_state.cursor_position);
 }
 
 main :: () {

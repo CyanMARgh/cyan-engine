@@ -18,7 +18,7 @@ main :: () {
 		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
 		.{"metallic_roughness", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
 		.{"emissive", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		samples = 4
+		samples = 1
 	);
 	defer deinit(*fb_gbuffer_ms);
 	ssao_quality := ivec2.{1280, 720};
@@ -48,7 +48,7 @@ main :: () {
 
 	noise_texture := make_noise_texture(4, 4);
 	defer deinit(*noise_texture);
-	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
 
 	source_cubemap, ok := load_cubemap_from_file("res/yokohama2/", "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg");
@@ -112,10 +112,13 @@ main :: () {
 	}
 
 	glEnable(GL_CULL_FACE);
-	graphics_state.default_camera = .{.{yaw = 0.440064, pitch = -0.023836, position = .{1.826999, -0.00406, 3.104916}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 10, 0.15, 1.570796};
+	// graphics_state.default_camera = .{.{yaw = 0.440064, pitch = -0.023836, position = .{1.826999, -0.00406, 3.104916}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 10, 0.15, 1.570796};
+	// graphics_state.default_camera = .{.{yaw = 4.493997, pitch = 0.072886, position = .{-4.426746, -0.00406, -1.897735}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 10, 0.15, 1.570796};
+	graphics_state.default_camera = .{.{yaw = 4.435211, pitch = 0.088499, position = .{-1.379982, -0.00406, -0.895963}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 10, 0.15, 1.570796};
 	update_default_camera(true);
 
-	julia_offset := Vector3.{1., 0, 0};
+	julia_offset := Vector3.{2., 0, 0};
+	box_size :: .8;
 
 	for window_cycle(print_statistical_fps = true, capture_video = false) {
 		maybe_switch := false;
@@ -124,7 +127,7 @@ main :: () {
 			if type == .PRESS ifx keycode == {
 				case GLFW_KEY_ESCAPE; exit();
 				case #char"P"; screenshot();
-				case #char"C"; print("%", graphics_state.default_camera);
+				case #char"C"; print("%\n", graphics_state.default_camera);
 			}
 			case .MOUSE_BUTTON; using it.mouse_button_event;
 			if button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS {
@@ -154,9 +157,9 @@ main :: () {
 
 			glEnable(GL_DEPTH_TEST);
 			use(*shader_default);
-				draw_node(loaded_assets, root);
+				draw_all_roots(loaded_assets);
 			use(*shader_raymarched);
-				for translate(julia_offset) for scale(1.5) draw_cube_base();
+				for translate(julia_offset) for scale(box_size) draw_cube_base();
 			glDisable(GL_DEPTH_TEST);
 		bind_default_target();
 		bind_as_target(fb_ssao_raw);
@@ -189,13 +192,14 @@ main :: () {
 	}
 }
 
-
 FRAG_RAYMARCHED :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, UBO_TIME_INFO, #string GLSL
 	in struct VO {
 		vec3 position;
 		vec3 normal;
 		vec2 uv_0;
 	} vo;
+
+	const float box_size = .8;
 
 	float julia(int L, vec3 p) {
 		float t = u_time / 3.0 + .2;
@@ -219,11 +223,14 @@ FRAG_RAYMARCHED :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, UBO_TIME_INFO, #s
 		}
 		return 0.25 * sqrt(mz2 / md2) * log(mz2);
 	}
+	float box(vec3 p) {
+		vec3 q = abs(p) - vec3(box_size);
+		return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+	}
 	vec4 sdf(vec3 p) {
 		p -= u_center_position;
 
-		// return length(p) - .5;
-		return vec4(1., .6, .6, julia(5, p));
+		return vec4(1., .6, .6, max(julia(5, p * 1.5) / 1.5, box(p)));
 	}
 	const float epsilon = 1e-4;
 	vec3 sdf_normal(vec3 p) {
@@ -245,16 +252,21 @@ FRAG_RAYMARCHED :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, UBO_TIME_INFO, #s
 		float l = l0;
 		vec3 p;
 		vec4 h;
+		p = dir * l + origin;
 		for(int i = 0; i < 80; i++) {
-			p = dir * l + origin;
 			h = sdf(p);
 			if(h.w < epsilon) break;
-			if(h.w > 5) return Hit(l, false, vec3(0), vec3(0));
 			l += h.w;
+			p = dir * l + origin;
+			{
+				vec3 p2 = abs(p - u_center_position);
+				if(max(p2.x, max(p2.y, p2.z)) > box_size) return Hit(l, false, vec3(0), vec3(0));
+			}
 		}
 		return Hit(l, true, h.rgb, p);
 	}
 
+	layout(depth_greater) out float gl_FragDepth;
 	void main() {
 		vec3 origin = u_eye;
 		vec3 direction = vo.position - u_eye;
@@ -277,39 +289,6 @@ FRAG_RAYMARCHED :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, UBO_TIME_INFO, #s
 		o_emissive = vec3(0);
 	}
 GLSL);
-
-FRAG_SCREEN_SHOW_COLOR :: #string GLSL
-	uniform float u_time;
-
-	in vec2 vo_uv;
-	out vec4 o_color;
-	
-	void main() {
-		vec2 uv = vo_uv;
-		vec3 color;
-
-		if(uv.y > .5) {
-			uv.y = uv.y * 2 - 1;
-			if(uv.x > .5) {
-				uv.x = uv.x * 2 - 1;
-				color = texture(u_color, uv).xyz;
-			} else {
-				uv.x = uv.x * 2;
-				color = texture(u_depth, uv).xxx;
-			}
-		} else {
-			uv.y = uv.y * 2;
-			if(uv.x > .5) {
-				uv.x = uv.x * 2 - 1;
-				color = texture(u_normal, uv).xyz;
-			} else {
-				uv.x = uv.x * 2;
-				color = texture(u_position, uv).xyz;
-			}
-		}
-		o_color = vec4(color, 1);
-	}
-GLSL
 
 //TODO support both sampler2D and sampler2DMS
 FRAG_SSAO :: #run incl(UBO_SCREEN_METRICS, gen_kernel(), UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL

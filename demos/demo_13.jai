@@ -34,7 +34,7 @@ main :: () {
 	shader_show_texture := compile_shader_vf(VERT_SCREEN_QUAD, incl(defs(), FRAG_SHOW_TEXTURE));
 	defer deinit(*shader_show_texture);
 
-	loaded_assets, root := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
 	defer deinit(*loaded_assets);
 
 	material_default : Material;
@@ -82,7 +82,7 @@ main :: () {
 			glDepthFunc(GL_LESS);
 			clear_target(GL_DEPTH_BUFFER_BIT, .[.7, .8, .9, 1.]);
 			use(*shader_solid);
-				for translate(.{1.5, 0, 0}) draw_node_p(loaded_assets, root);
+				for translate(.{1.5, 0, 0}) draw_all_roots(loaded_assets);
 
 			glDisable(GL_DEPTH_TEST);
 
@@ -105,7 +105,7 @@ main :: () {
 				for translate(.{-.4, 0, 0}) for scale(.{.1, 1.5, 1.5}) draw_cube_base();
 			for *shader_transparent {
 				set("u_alpha_scale", .2);
-				for translate(.{-1.5, 0, 0}) draw_node_p(loaded_assets, root);
+				for translate(.{-1.5, 0, 0}) draw_all_roots(loaded_assets);
 				set("u_alpha_scale", 1.);
 			}
 			glDisable(GL_BLEND);

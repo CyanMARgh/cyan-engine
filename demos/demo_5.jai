@@ -5,10 +5,9 @@
 #import "Random";
 
 coordinate_screen_to_world :: (position : Vector2) -> Vector3 {
-	using backend_state.window_metrics;
 	return .{
-		width * (2 * position.x / width - 1) / height, 
-		1 - 2 * position.y / height,
+		backend_state.window_metrics.width * (2 * position.x / backend_state.window_metrics.width - 1) / backend_state.window_metrics.height, 
+		1 - 2 * position.y / backend_state.window_metrics.height,
 		0
 	};
 }

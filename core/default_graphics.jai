@@ -33,6 +33,10 @@ scale :: (factor : Vector3) -> Scene_Transformation {
 scale :: (factor : float) -> Scene_Transformation {
 	return scale(.{factor, factor, factor});
 }
+transformation :: (matrix4 : Matrix4) -> Scene_Transformation {
+	return .{matrix4};
+}
+
 for_expansion :: (st : Scene_Transformation, $body : Code, flags : For_Flags) #expand {
 	`it, `it_index := 0;
 	old_translation := graphics_state.scene_translation;
