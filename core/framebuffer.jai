@@ -36,7 +36,7 @@ srcheader :: (builder : *String_Builder, using framebuffer : Framebuffer, postfi
 srcheader :: (using framebuffer : Framebuffer, postfix := "", offset := 0) -> string {
 	builder := String_Builder.{allocator = temp};
 	srcheader(*builder, framebuffer, postfix, offset);
-	return builder_to_string(*builder, allocator = temp);
+	return builder_to_string(*builder,, allocator = temp);
 }
 srcheaders :: (framebuffers : ..Framebuffer) -> string {
 	builder := String_Builder.{allocator = temp};
@@ -46,7 +46,7 @@ srcheaders :: (framebuffers : ..Framebuffer) -> string {
 		offset += it.attachments_count;
 	}
 
-	return builder_to_string(*builder, allocator = temp);
+	return builder_to_string(*builder,, allocator = temp);
 }
 
 channels_type_to_name :: (chanels_type : GLenum) -> string {
@@ -71,7 +71,7 @@ dstheader :: (using framebuffer : Framebuffer) -> string {
 		print_to_builder(*builder, "layout(location = %1) out %2 o_%3;\n", color_attachment, channels_type_to_name(chanels_type), name);
 		color_attachment += 1;
 	}
-	return builder_to_string(*builder, allocator = temp);
+	return builder_to_string(*builder,, allocator = temp);
 }
 
 make_framebuffer :: (size : ivec2, _attachments : ..FB_Attachment, samples :u8= 0) -> Framebuffer, ok:bool {

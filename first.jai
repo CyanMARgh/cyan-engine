@@ -22,7 +22,7 @@ DEBUG :: true;
 
 BUILD_AND_RUN_ALL :: true;
 TOTAL_DEMOS :: 20;
-DEMO_ID :: 10;
+DEMO_ID :: 19;
 
 #run {
 	set_build_options_dc(.{do_output = false});
@@ -65,7 +65,9 @@ build :: (id : int, run := false) -> bool {
 		text_output_flags = 0;
 		output_executable_name = tprint("main_%1", id);
 		output_path = "execs";
-		import_path = .[import_path[0], ".."];
+		// print("->%\n", #filepath);
+		import_path = .["modules", import_path[1], ".."];
+		// print("import path: %\n", import_path);
 	}
 	set_build_options(target_options, w);
 

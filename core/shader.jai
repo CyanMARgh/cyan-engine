@@ -14,33 +14,33 @@ incldefs :: (sources : ..string) -> string {
 	assert(sources.count >= 1);
 	for i : 0..sources.count-2 {
 		source := sources[i];
-		for line : split(source, cast(u8)#char"\n") {
+		for line : split(source, cast(u8)#char"\n",, temp) {
 			print_to_builder(*builder, "\t/*+*/#define %\n", line);
 		}
 		append(*builder, "\n");
 	}
 	append(*builder, sources[sources.count - 1]);
-	return builder_to_string(*builder, allocator = temp);	
+	return builder_to_string(*builder,, allocator = temp);	
 }
 defs :: (lines : ..string) -> string {
 	builder := String_Builder.{allocator = temp};
 	for lines {
 		print_to_builder(*builder, "#define %\n", it);
 	}
-	return builder_to_string(*builder, allocator = temp);
+	return builder_to_string(*builder,, allocator = temp);
 }
 incl :: (sources : ..string) -> string {
 	builder := String_Builder.{allocator = temp};
 	assert(sources.count >= 1);
 	for i : 0..sources.count-2 {
 		source := sources[i];
-		for line : split(source, cast(u8)#char"\n") {
+		for line : split(source, cast(u8)#char"\n",, temp) {
 			print_to_builder(*builder, "\t/*+*/%\n", line);
 		}
 		append(*builder, "\n");
 	}
 	append(*builder, sources[sources.count - 1]);
-	return builder_to_string(*builder, allocator = temp);
+	return builder_to_string(*builder,, allocator = temp);
 }
 
 compile_shader_vf :: (src_vert : string, src_frag : string) -> Shader, ok:bool {
@@ -67,7 +67,7 @@ compile_shader_vf :: (src_vert : string, src_frag : string) -> Shader, ok:bool {
 	if !is_linked {
 		max_length : GLint;
 		glGetProgramiv(id, GL_INFO_LOG_LENGTH, xx *max_length);
-		info_log := cast(string)NewArray(max_length, u8, allocator = temp);
+		info_log := cast(string)NewArray(max_length, u8,, allocator = temp);
 		glGetProgramInfoLog(id, xx max_length, xx *info_log.count, info_log.data);
 		print_color("failed to link shader:\n", color = .RED);
 		print_color("%", info_log, color = .YELLOW);
@@ -81,16 +81,16 @@ use :: (using s : *Shader) {
 	glUseProgram(id);
 }
 compile_shader_part :: (_source : string, type : u32) -> Shader_Part, ok:bool {
-	source := join(GLSL_VERSION_LINE, _source, allocator = temp);
+	source := join(GLSL_VERSION_LINE, _source,, allocator = temp);
 	id := glCreateShader(type);
-	lines := split(source, cast(u8) #char "\n");
+	lines := split(source, cast(u8) #char "\n",, temp);
 
 	builder := String_Builder.{allocator = temp};
 	for id : 0..lines.count-1 {
 		print_to_builder(*builder, "%\n", lines[id]);
 	}
 	append(*builder, "\0");
-	c_src := builder_to_string(*builder, allocator = temp).data;
+	c_src := builder_to_string(*builder,, allocator = temp).data;
 
 	glShaderSource(id, 1, *c_src, null);
 	glCompileShader(id);

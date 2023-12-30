@@ -372,7 +372,7 @@ gen_kernel :: () -> string {
 		v *= r * KERNEL_RADIUS;
 		print_to_builder(*builder, "\tvec3(%, %, %)%", v.x, v.y, v.z, ifx i == KERNEL_SIZE - 1 then ");\n" else ",\n");
 	}
-	return builder_to_string(*builder, allocator = temp);
+	return builder_to_string(*builder,, allocator = temp);
 }
 
 VERT_TO_CUBEMAP :: #string GLSL

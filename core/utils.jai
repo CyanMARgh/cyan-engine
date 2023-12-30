@@ -61,7 +61,7 @@ tjoin :: (first : []$T, other : ..Any) -> []T {
 }
 
 uppercase :: (src : string) -> string {
-	res := copy_string(src, allocator = temp);
+	res := copy_string(src,, allocator = temp);
 	for *c : cast([]u8)res {
 		if c.* >= #char"a" && c.* <= #char"z" {
 			c.* = xx (c.* + #char"A" - #char"a");
