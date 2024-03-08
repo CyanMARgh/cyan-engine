@@ -1,0 +1,131 @@
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0mfps = 61.614998
+fps = 60.073254
+fps = 60.078041
+fps = 56.634995
+
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0mfps = 49.620045
+fps = 60.055401
+fps = 60.032898
+fps = 60.059685
+fps = 60.049538
+fps = 52.215813
+
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0mfps = 61.12891
+fps = 60.063828
+fps = 56.640732
+
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0m
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 1,536 bytes in 1 allocation.
+[0mfps = 36.918968
+fps = 58.883373
+fps = 60.050346
+fps = 60.045391
+fps = 60.048607
+fps = 49.637016
+[0mnodes:
+{name = ""; parent = -1; world_transform = {_11 = 1; _12 = 0; _13 = 0; _14 = 0; _21 = 0; _22 = 1; _23 = 0; _24 = 0; _31 = 0; _32 = 0; _33 = 1; _34 = 0; _41 = 0; _42 = 0; _43 = 0; _44 = 1; }; local_transform = {_11 = 1; _12 = 0; _13 = 0; _14 = 0; _21 = 0; _22 = 1; _23 = 0; _24 = 0; _31 = 0; _32 = 0; _33 = 1; _34 = 0; _41 = 0; _42 = 0; _43 = 0; _44 = 1; }; translation = {0, 0, 0}; scale = {1, 1, 1}; rotation = {-0, -0, -0, -1}; primitive_group = -1; children = [1]; }
+
+{name = ""; parent = 0; world_transform = {_11 = 1; _12 = 0; _13 = 0; _14 = 0; _21 = 0; _22 = 1; _23 = 0; _24 = 0; _31 = 0; _32 = 0; _33 = 1; _34 = 0; _41 = 0; _42 = 0; _43 = 0; _44 = 1; }; local_transform = {_11 = 1; _12 = 0; _13 = 0; _14 = 0; _21 = 0; _22 = 1; _23 = 0; _24 = 0; _31 = 0; _32 = 0; _33 = 1; _34 = 0; _41 = 0; _42 = 0; _43 = 0; _44 = 1; }; translation = {0, 0, 0}; scale = {1, 1, 1}; rotation = {0, 0, 0, 1}; primitive_group = -1; children = [2]; }
+
+{name = ""; parent = 1; world_transform = {_11 = 1; _12 = 0; _13 = 0; _14 = 0; _21 = 0; _22 = 1; _23 = 0; _24 = 0; _31 = 0; _32 = 0; _33 = 1; _34 = 0; _41 = 0; _42 = 0; _43 = 0; _44 = 1; }; local_transform = {_11 = 1; _12 = 0; _13 = 0; _14 = 0; _21 = 0; _22 = 1; _23 = 0; _24 = 0; _31 = 0; _32 = 0; _33 = 1; _34 = 0; _41 = 0; _42 = 0; _43 = 0; _44 = 1; }; translation = {0, 0, 0}; scale = {1, 1, 1}; rotation = {-0, -0, -0, -1}; primitive_group = 0; children = []; }
+
+{name = ""; parent = -1; world_transform = {_11 = 1; _12 = 0; _13 = 0; _14 = 0; _21 = 0; _22 = 1; _23 = 0; _24 = 0; _31 = 0; _32 = 0; _33 = 1; _34 = 0; _41 = 0; _42 = 0; _43 = 0; _44 = 1; }; local_transform = {_11 = 1; _12 = 0; _13 = 0; _14 = 0; _21 = 0; _22 = 1; _23 = 0; _24 = 0; _31 = 0; _32 = 0; _33 = 1; _34 = 0; _41 = 0; _42 = 0; _43 = 0; _44 = 1; }; translation = {0, 0, 0}; scale = {1, 1, 1}; rotation = {0, 0, 0, 1}; primitive_group = 1; children = []; }
+
+animations:
+{[{2, ROTATION, LINEAR, [1.25, 2.5], [-0, -0, -0, -1, 1, 0, 0, 0]}, {0, TRANSLATION, LINEAR, [0, 1.25, 2.5, 3.70833], [0, 0, 0, 0, 2.52, 0, 0, 2.52, 0, 0, 0, 0]}], 3.70833}
+
+
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0mfps = 53.055981
+fps = 60.067913
+fps = 56.632061
+
+Total: 0 bytes in 0 allocations.
+
+Marked as non-leaks: 0 bytes in 0 allocations.
+[0;32mbuild #0 finished
+[0;m[0;32mbuild #1 finished
+[0;m[0;32mbuild #2 finished
+[0;m[0;32mbuild #3 finished
+[0;m[0;32mbuild #4 finished
+[0;m[0;32mbuild #5 finished
+[0;m[0;32mbuild #6 finished
+[0;m[0;32mbuild #7 finished
+[0;m[0;32mbuild #8 finished
+[0;m[0;32mbuild #9 finished
+[0;m[0;32mbuild #10 finished
+[0;m[0;32mbuild #11 finished
+[0;m[0;32mbuild #12 finished
+[0;m[0;32mbuild #13 finished
+[0;m[0;32mbuild #14 finished
+[0;m[0;32mbuild #15 finished
+[0;m[0;32mbuild #16 finished
+[0;m[0;32mbuild #17 finished
+[0;m[0;32mbuild #18 finished
+[0;m[0;32mbuild #19 finished
+[0;m

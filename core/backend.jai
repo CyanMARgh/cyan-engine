@@ -36,7 +36,7 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 			keys_down[keycode] = false;
 		}
 		push_context ctx {
-			push(*window_events, .{
+			array_add(*window_events, .{
 				type = .KEY,
 				key_event = .{
 					keycode = keycode,
@@ -60,7 +60,7 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 			mouse_buttons_released[button] = true;
 		}
 		push_context ctx {
-			push(*window_events, .{
+			array_add(*window_events, .{
 				type = .MOUSE_BUTTON,
 				mouse_button_event = .{
 					button = button,
@@ -84,7 +84,7 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 }
 deinit_resources :: () {
 	glfwTerminate();
-	deinit(*window_events);
+	// deinit(*window_events);
 }
 Window_Cycle :: struct { 
 	print_statistical_fps := false;
@@ -113,9 +113,11 @@ for_expansion :: (using window_cycle : Window_Cycle, $body : Code, flags : For_F
 	}
 	`Events : struct {};
 	`for_expansion :: (events : type_of(Events), $body : Code, flags : For_Flags) #expand {
-		for :process window_events {
-			`it, `it_index := it, it_index;
+		i := 0;
+		while window_events.count {
+			`it, `it_index := pop_front(*window_events), i;
 			#insert body;
+			i += 1;
 		}
 	}
 	need_screenshot := false;
@@ -272,7 +274,7 @@ backend_state : struct {
 	cursor_delta : Vector2;
 	dragg_start : Vector2;
 
-	window_events : SB_Queue(Window_Event, 100);
+	window_events : SBDA(Window_Event, 100);
 	mouse_buttons_down : [GLFW_MOUSE_BUTTON_LAST]bool;
 	mouse_buttons_pressed : [GLFW_MOUSE_BUTTON_LAST] bool;
 	mouse_buttons_released : [GLFW_MOUSE_BUTTON_LAST] bool;
