@@ -40,7 +40,7 @@ ffmpeg_start_rendering :: (width : int, height : int, fps := 60, filename := "ou
 }
 ffmpeg_end_rendering :: (ffmpeg : *FFMPEG) {
 	#if OS == .WINDOWS {
-		fclose(ffmpeg.process.input.handle); //not sure about this
+		// fclose(ffmpeg.process.input.handle); //not sure about this
 	} else {
 		close(ffmpeg.process.input.handle);
 	}

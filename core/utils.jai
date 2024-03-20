@@ -12,7 +12,7 @@ check_gl_error :: (loc := #caller_location) {
 		if !err break;
 		has_errors = true;
 		path := parse_path(loc.fully_pathed_filename).words;
-		print_color("error at line %, %. code = %\n", loc.line_number, path[path.count-1], err, color = .RED);
+		print_color("error at line %, %. code = %\n", loc.line_number, path[path. count-1], err, color = .RED);
 	}
 	#if FATAL_GL_ERROR_CHECK if has_errors exit(1);
 }
@@ -61,7 +61,7 @@ tjoin :: (first : []$T, other : ..Any) -> []T {
 }
 
 uppercase :: (src : string) -> string {
-	res := copy_string(src,, allocator = temp);
+	res := copy_string(src,, temp);
 	for *c : cast([]u8)res {
 		if c.* >= #char"a" && c.* <= #char"z" {
 			c.* = xx (c.* + #char"A" - #char"a");
@@ -84,7 +84,7 @@ hex2f4 :: (code : u32) -> Vector4 {
 }
 
 align_of :: ($T : Type) -> int {
-	o : struct { b : bool; t : T; }
+	o : struct #type_info_none { b : bool; t : T; }
 	return xx(cast(u64) *o.t - cast(u64) *o.b);
 }
 

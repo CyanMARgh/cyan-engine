@@ -1,6 +1,6 @@
-**requirements**
+jai **requirements**
 - OS: Linux
-- compiler version: beta 0.1.073
+- compiler version: beta 0.1.088
 modules:
 - GLTF_Parser module: https://github.com/kooparse/gltf_parser (30 aug, 2023) 
 - GLFW module: https://github.com/kujukuju/JaiGLFW (5 jun, 2023)

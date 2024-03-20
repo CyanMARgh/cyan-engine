@@ -52,7 +52,18 @@ main :: () {
 	// fb_gbuffer := make_framebuffer(1280, 720, .NORMAL | .POSITION, 8);
 
 	// graphics_state.default_camera = .{.{yaw = 5.445257, pitch = -0.222045, position = .{-2.032923, 0.498405, 1.628186}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 9, 0.15, 1.570796};
-	graphics_state.default_camera = .{.{yaw = 5.243458, pitch = -0.443349, position = .{-1.459238, 0.34051, -0.199949}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 9, 0.15, 1.570796};
+
+	graphics_state.default_camera = .{
+		camera = .{
+			yaw = 5.243458,
+			pitch = -0.443349,
+			position = .{-1.459238, 0.34051, -0.199949},
+			near = 0.1,
+			far = 1000,
+			fow_vertical = 0.942478,
+			screen_size = .{1280, 720},
+		}
+	};
 	update_default_camera(true);
 
 	glEnable(GL_CULL_FACE);

@@ -19,21 +19,33 @@ DEBUG :: true;
 // TODO atomics painter: autogenerate attributes header
 // TODO save texture binary/as file
 // TODO push target framebuffer metrics
+// TODO empty mesh -> 0 handler
 
-BUILD_AND_RUN_ALL :: true;
-TOTAL_DEMOS :: 20;
-DEMO_ID :: 19;
+BUILD_ALL :: false;
+RUN :: true;
+TOTAL_DEMOS :: 22;
+DEMO_ID :: 21;
 
 #run {
 	set_build_options_dc(.{do_output = false});
-	if BUILD_AND_RUN_ALL {
+	if BUILD_ALL {
 		for 0..TOTAL_DEMOS-1 {
 			if !build(it, true) break;
-			make_link(it);
-			run_command("./main", #filepath);
+			#if OS == .LINUX {
+				if RUN {
+					make_link(it);
+					run_command("./main", #filepath);					
+				}
+			}
 		}
 	} else {
-		if build(DEMO_ID) make_link(DEMO_ID);
+		if build(DEMO_ID) {
+			make_link(DEMO_ID);
+			if RUN {
+				make_link(DEMO_ID);
+				run_command("./main", #filepath);					
+			}
+		}
 	}
 }
 
@@ -65,9 +77,7 @@ build :: (id : int, run := false) -> bool {
 		text_output_flags = 0;
 		output_executable_name = tprint("main_%1", id);
 		output_path = "execs";
-		// print("->%\n", #filepath);
-		import_path = .["modules", import_path[1], ".."];
-		// print("import path: %\n", import_path);
+		import_path = .[import_path[0], import_path[1], ".."];
 	}
 	set_build_options(target_options, w);
 

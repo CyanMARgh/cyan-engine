@@ -1,7 +1,12 @@
 using GLFW :: #import "GLFW";
 using Extra_Containers :: #import "Extra_Containers";
 #import "gltf_parser";
-using True_Type :: #import,dir "truetype";
+#if OS == .LINUX {
+	using True_Type :: #import,dir "truetype";
+	#load "fonts.jai";
+	#load "text_painter.jai";
+	#load "ui.jai";
+}
 
 #import "Math";
 #import "GL";
@@ -30,9 +35,6 @@ using True_Type :: #import,dir "truetype";
 #load "capture.jai";
 #load "framebuffer.jai";
 #load "texture_3d.jai";
-#load "fonts.jai";
 #load "shader_includes.jai";
 #load "cubemap.jai";
 #load "ssbo.jai";
-#load "text_painter.jai";
-#load "ui.jai";

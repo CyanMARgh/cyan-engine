@@ -27,6 +27,7 @@ Scene_Transformation :: struct {
 translate :: (offset : Vector3) -> Scene_Transformation {
 	return .{make_translation_matrix4(offset)};
 }
+reflect_y :: #run scale(.{1, -1, 1});
 scale :: (factor : Vector3) -> Scene_Transformation {
 	return .{make_scale_matrix4(factor)};
 }
@@ -64,6 +65,9 @@ init_default_graphics :: () {
 }
 draw_empty_mesh :: (vertices : u32) {
 	draw(empty_mesh, GL_TRIANGLES, vertices);
+}
+draw_empty_mesh_instanced :: (vertices : u32, instances : u32) {
+	draw_instanced(empty_mesh, instances, GL_TRIANGLES, vertices);
 }
 deinit_default_graphics :: () {
 	deinit(*empty_mesh);

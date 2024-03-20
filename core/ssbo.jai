@@ -26,15 +26,23 @@ deinit :: (ssbo : *SSBO) {
 }
 
 SSBO_Dynamic :: struct(base_type : Type) {
-	#as using base : SSBO;
+	using base : SSBO;
 	cpu_buffer : [..]base_type;
 	gpu_max_elements : u32;
 	fixed_part_size : u32;
-
 }
 bind :: (slot : u32, ssbo_dynamic : SSBO_Dynamic) {
 	bind(slot, ssbo_dynamic.base);
 }
+deinit :: (using ssbo : *SSBO_Dynamic) {
+	deinit(*base);
+	array_free(cpu_buffer);
+}
+
+operator*[] :: (using ssbo_dynamic : *SSBO_Dynamic($Type), i : int) -> *Type {
+	return *cpu_buffer[i];
+}
+
 make_ssbo_dynamic :: ($base_type : Type, max_elements : u32) -> SSBO_Dynamic(base_type) {
 	result : SSBO_Dynamic(base_type);
 	result.fixed_part_size = xx max(size_of(u32), align_of(base_type));

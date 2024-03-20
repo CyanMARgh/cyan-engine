@@ -1,4 +1,7 @@
 GLSL_VERSION_LINE :: #run tprint("\t#version %\n", GL_REQUIRED_VERSION_MAJOR * 100 + GL_REQUIRED_VERSION_MINOR * 10);
+// #run {
+// 	print("GLSL_VERSION_LINE:\n%", GLSL_VERSION_LINE);
+// }
 
 Shader_Part :: struct {
 	id : u32;
@@ -20,14 +23,14 @@ incldefs :: (sources : ..string) -> string {
 		append(*builder, "\n");
 	}
 	append(*builder, sources[sources.count - 1]);
-	return builder_to_string(*builder,, allocator = temp);	
+	return builder_to_string(*builder,, temp);	
 }
 defs :: (lines : ..string) -> string {
 	builder := String_Builder.{allocator = temp};
 	for lines {
 		print_to_builder(*builder, "#define %\n", it);
 	}
-	return builder_to_string(*builder,, allocator = temp);
+	return builder_to_string(*builder,, temp);
 }
 incl :: (sources : ..string) -> string {
 	builder := String_Builder.{allocator = temp};
@@ -40,7 +43,7 @@ incl :: (sources : ..string) -> string {
 		append(*builder, "\n");
 	}
 	append(*builder, sources[sources.count - 1]);
-	return builder_to_string(*builder,, allocator = temp);
+	return builder_to_string(*builder,, temp);
 }
 
 compile_shader_vf :: (src_vert : string, src_frag : string) -> Shader, ok:bool {
@@ -67,7 +70,7 @@ compile_shader_vf :: (src_vert : string, src_frag : string) -> Shader, ok:bool {
 	if !is_linked {
 		max_length : GLint;
 		glGetProgramiv(id, GL_INFO_LOG_LENGTH, xx *max_length);
-		info_log := cast(string)NewArray(max_length, u8,, allocator = temp);
+		info_log := cast(string)NewArray(max_length, u8,, temp);
 		glGetProgramInfoLog(id, xx max_length, xx *info_log.count, info_log.data);
 		print_color("failed to link shader:\n", color = .RED);
 		print_color("%", info_log, color = .YELLOW);
@@ -81,7 +84,7 @@ use :: (using s : *Shader) {
 	glUseProgram(id);
 }
 compile_shader_part :: (_source : string, type : u32) -> Shader_Part, ok:bool {
-	source := join(GLSL_VERSION_LINE, _source,, allocator = temp);
+	source := join(GLSL_VERSION_LINE, _source,, temp);
 	id := glCreateShader(type);
 	lines := split(source, cast(u8) #char "\n",, temp);
 
@@ -90,7 +93,8 @@ compile_shader_part :: (_source : string, type : u32) -> Shader_Part, ok:bool {
 		print_to_builder(*builder, "%\n", lines[id]);
 	}
 	append(*builder, "\0");
-	c_src := builder_to_string(*builder,, allocator = temp).data;
+	src := builder_to_string(*builder,, temp);
+	c_src := src.data;
 
 	glShaderSource(id, 1, *c_src, null);
 	glCompileShader(id);
@@ -105,7 +109,7 @@ compile_shader_part :: (_source : string, type : u32) -> Shader_Part, ok:bool {
 		ok, info_log_parsed := scan("%d(%d)", info_log);
 		if info_log_parsed.count >= 2 && info_log_parsed[1].type == type_info(int) {
 			error_line := (cast(*int)(info_log_parsed[1].value_pointer)).*;
-			source_lines := split(source, "\n");
+			source_lines := split(source, "\n",, temp);
 			tabbed := true;
 			for source_lines if it.count != 0 && it[0] != #char"\t" then tabbed = false;
 			RANGE :: 2;
@@ -121,6 +125,7 @@ compile_shader_part :: (_source : string, type : u32) -> Shader_Part, ok:bool {
 			}
 		} else {
 			print_color("unable to parse error message\n", color = .YELLOW);
+			print("%\n", src);
 		}
 		// print("full shader source = \n%\n", source);
 		glDeleteShader(id);

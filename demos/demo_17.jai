@@ -114,7 +114,7 @@ main :: () {
 	glEnable(GL_CULL_FACE);
 	// graphics_state.default_camera = .{.{yaw = 0.440064, pitch = -0.023836, position = .{1.826999, -0.00406, 3.104916}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 10, 0.15, 1.570796};
 	// graphics_state.default_camera = .{.{yaw = 4.493997, pitch = 0.072886, position = .{-4.426746, -0.00406, -1.897735}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 10, 0.15, 1.570796};
-	graphics_state.default_camera = .{.{yaw = 4.435211, pitch = 0.088499, position = .{-1.379982, -0.00406, -0.895963}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, 10, 0.15, 1.570796};
+	graphics_state.default_camera = .{camera = .{yaw = 4.435211, pitch = 0.088499, position = .{-1.379982, -0.00406, -0.895963}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}, }, linear_speed = 10, pitch_limit = 1.570796};
 	update_default_camera(true);
 
 	julia_offset := Vector3.{2., 0, 0};

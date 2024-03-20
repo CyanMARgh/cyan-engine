@@ -10,7 +10,7 @@ Camera :: struct {
 Movable_Camera :: struct {
 	#as using camera : Camera;
 
-	linear_speed, angular_speed := 10., .15;
+	linear_speed, keyboard_angular_speed, angular_speed := 10., .15, .002;
 	pitch_limit := PI * .5;
 }
 
@@ -34,13 +34,17 @@ update_camera :: (using movable_camera : *Movable_Camera, target_screen_size : i
 		if keys_down[#char "R"]	{ d_pitch += 10; updated = true; }
 		if keys_down[#char "F"]	{ d_pitch -= 10; updated = true; }
 
+		d_yaw *= keyboard_angular_speed * delta_time;
+		d_pitch *= keyboard_angular_speed * delta_time;
+
 		if cursor_delta != .{} {
-			d_yaw, d_pitch = -cursor_delta.x, -cursor_delta.y;
+			d_yaw -= cursor_delta.x * angular_speed;
+			d_pitch -= cursor_delta.y * angular_speed;
 			updated = true;
 		}
 
-		yaw += d_yaw * angular_speed * delta_time;
-		pitch += d_pitch * angular_speed * delta_time;
+		yaw += d_yaw;
+		pitch += d_pitch;
 		Clamp(*pitch, -pitch_limit, pitch_limit);
 		yaw = fmod_cycling(yaw, 2 * PI);
 

@@ -193,6 +193,15 @@ VERT_SPHERE_GENERATOR :: #run incl(VERTICE_INTERFACE_STRUCT, #string GLSL
 GLSL);
 VERT_SPHERE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, VERT_SPHERE_GENERATOR);
 
+VERT_PLANE_GENERATOR :: #run incl(VERTICE_INTERFACE_STRUCT, #string GLSL
+	Input_Vertice gen_vertice() {
+		float points[12] = float[12](1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1);
+		vec2 uv = vec2(points[gl_VertexID << 1], points[(gl_VertexID << 1) | 1]);
+		return Input_Vertice(vec3(uv.x * 2 - 1, 0, uv.y * 2 - 1), vec3(0, 1, 0), uv);
+	}
+GLSL);
+VERT_PLANE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_MAT_M, VERTICE_INTERFACE_OUT, VERT_PLANE_GENERATOR);
+
 VERTICE_INTERFACE_STRUCT :: #string GLSL
 	#ifndef INPUT_VERTICE_STRUCT
 	#define INPUT_VERTICE_STRUCT

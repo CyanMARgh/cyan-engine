@@ -130,7 +130,7 @@ main :: () {
 	defer deinit(*loaded_assets);
 
 	graphics_state.default_camera = .{
-		.{
+		camera = .{
 			yaw = 6.045851,
 			pitch = -0.217186,
 			position = .{-2.900604, 1.000558, 3.244453},
@@ -138,8 +138,7 @@ main :: () {
 			far = 1000, 
 			fow_vertical = 0.942478,
 			screen_size = .{1280, 720}, 
-		}, 
-		10, 0.15, 1.570796
+		}
 	};
 	set_value(*graphics_state.ubo_default_camera, to_ubo_content(graphics_state.default_camera));
 
@@ -821,5 +820,5 @@ gen_kernel :: () -> string {
 		v *= r * KERNEL_RADIUS;
 		print_to_builder(*builder, "\tvec3(%, %, %)%", v.x, v.y, v.z, ifx i == KERNEL_SIZE - 1 then ");\n" else ",\n");
 	}
-	return builder_to_string(*builder,, allocator = temp);
+	return builder_to_string(*builder,, temp);
 }
