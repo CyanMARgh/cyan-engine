@@ -23,7 +23,7 @@ main :: () {
 	shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED);
 	defer deinit(*shader_screen_pass);
 
-	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("./res/shapes.glb");
 	defer deinit(*loaded_assets);
 
 	// fb_gbuffer := make_framebuffer(1280, 720, .NORMAL | .POSITION, 8);

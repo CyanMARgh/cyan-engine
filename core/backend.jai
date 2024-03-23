@@ -30,12 +30,16 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 	}
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  
 	key_callback :: (window : *GLFWwindow, keycode : s32, scancode : s32, action : s32, mode : s32) #c_call {
-		if action == GLFW_PRESS {
-			keys_down[keycode] = true;
-		} else if action == GLFW_RELEASE {
-			keys_down[keycode] = false;
-		}
 		push_context ctx {
+			if keycode < 0 || keycode >= 1024 {
+				print("unknown key: %\n", keycode);
+				return;
+			}
+			if action == GLFW_PRESS {
+				keys_down[keycode] = true;
+			} else if action == GLFW_RELEASE {
+				keys_down[keycode] = false;
+			}
 			array_add(*window_events, .{
 				type = .KEY,
 				key_event = .{
@@ -184,10 +188,15 @@ for_expansion :: (using window_cycle : Window_Cycle, $body : Code, flags : For_F
 				ffmpeg_scale_and_send_frame(*ffmpeg, *frame);
 			}
 			if need_screenshot {
-				filename := ifx screenshot_name
-					then tprint("screenshots/%.png\0", screenshot_name)
-					else tprint("screenshots/screenshot_%.png\0", calendar_to_string(to_calendar(current_time_consensus())));
-				stbi_write_png(xx filename.data, xx frame.width, xx frame.height, 4, xx frame.bytes, xx (frame.width * 4));
+				// data : []u8 = .[255, 255, 255, 255];
+				// stbi_write_png("test.png", 1, 1, 4, data.data, 4);
+
+				// filename := ifx screenshot_name
+				// 	then tprint("screenshots/%.png\0", screenshot_name)
+				// 	else 
+				t := cast(S128)current_time_consensus(); 
+				filename := tprint("screenshots/%0%0.png\0", formatInt(t.high, base = 16, minimum_digits = 16), formatInt(t.low, base = 16, minimum_digits = 16));
+				stbi_write_png(filename.data, xx frame.width, xx frame.height, 4, xx frame.bytes, xx (frame.width * 4));
 				need_screenshot = false;
 			}
 		}

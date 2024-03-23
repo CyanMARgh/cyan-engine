@@ -77,9 +77,11 @@ deinit_default_graphics :: () {
 }
 
 update_default_camera :: (forced := false) {
-	if forced || update_camera(*default_camera, backend_state.window_metrics.size, backend_state.is_cursor_locked) {
+	// if forced || 
+	update_camera(*default_camera, backend_state.window_metrics.size, backend_state.is_cursor_locked);
+	// {
 		set_value(*ubo_default_camera, to_ubo_content(default_camera));
-	}
+	// }
 }
 
 set_model_transform :: (transform : Matrix4) {

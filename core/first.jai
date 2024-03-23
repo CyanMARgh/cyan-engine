@@ -19,10 +19,11 @@ DEBUG :: true;
 // TODO atomics painter: autogenerate attributes header
 // TODO save texture binary/as file
 // TODO push target framebuffer metrics
+// TODO empty mesh -> 0 handler
 
 BUILD_ALL :: false;
 RUN :: true;
-TOTAL_DEMOS :: 23;
+TOTAL_DEMOS :: 22;
 DEMO_ID :: 21;
 
 #run {
@@ -31,10 +32,8 @@ DEMO_ID :: 21;
 		for 0..TOTAL_DEMOS-1 {
 			if !build(it, true) break;
 			#if OS == .LINUX {
-				if RUN {
-					make_link(it);
-					run_command("./main", #filepath);					
-				}
+				make_link(it);
+				run_command(tprint("./execs/main_%", formatInt(it, minimum_digits = 2)), #filepath);
 			}
 		}
 	} else {
@@ -42,7 +41,7 @@ DEMO_ID :: 21;
 			make_link(DEMO_ID);
 			if RUN {
 				make_link(DEMO_ID);
-				run_command("./main", #filepath);					
+				run_command(tprint("./execs/main_%", formatInt(DEMO_ID, minimum_digits = 2)), #filepath);					
 			}
 		}
 	}
@@ -52,13 +51,13 @@ EXECS_DIR :: "execs";
 EXE_SUFFIX :: "";
 
 make_link :: (id : int) {
-	id_str := formatInt(id, minimum_digits = 2);
-	run_command("ln", "-s", "-f", tprint("./%1/main_%2%3", EXECS_DIR, id_str, EXE_SUFFIX), tprint("main%", EXE_SUFFIX));
+	#if OS == .LINUX {
+		run_command("ln", "-s", "-f", tprint("./%1/main_%2%3", EXECS_DIR, id, EXE_SUFFIX), tprint("main%", EXE_SUFFIX));
+	}
 }
 
 build :: (id : int, run := false) -> bool {
-	id_str := formatInt(id, minimum_digits = 2);
-	root := tprint("demos/demo_%.jai", id_str);
+	root := tprint("demos/demo_%.jai",id);
 	w := compiler_create_workspace(root);
 	if !w {
 		print("Workspace creation failed.\n");
@@ -76,7 +75,7 @@ build :: (id : int, run := false) -> bool {
 		}
 
 		text_output_flags = 0;
-		output_executable_name = tprint("main_%1", id_str);
+		output_executable_name = tprint("main_%1", id);
 		output_path = "execs";
 		import_path = .[import_path[0], import_path[1], ".."];
 	}
@@ -86,7 +85,7 @@ build :: (id : int, run := false) -> bool {
 
 	compiler_begin_intercept(w);
 	add_build_file(tprint("%/%", #filepath, root), w);
-	#if OS == .WINDOWS add_build_string("#run (#import \"Windows_Resources\").disable_runtime_console();", w);
+	#if OS == .WINDOWS && !DEBUG add_build_string("#run (#import \"Windows_Resources\").disable_runtime_console();", w);
 	ok := true;
 	while 1 {
 		message := compiler_wait_for_message();
@@ -97,7 +96,7 @@ build :: (id : int, run := false) -> bool {
 		}
 	}
 	compiler_end_intercept(w);
-	print_color("build #% %\n", id_str, ifx ok then "finished" else "failed", color = ifx ok then .GREEN else .RED);
+	print_color("build #% %\n", id, ifx ok then "finished" else "failed", color = ifx ok then .GREEN else .RED);
 	return ok;
 }
 

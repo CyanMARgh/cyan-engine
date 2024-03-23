@@ -4,6 +4,10 @@
 #import "GL";
 #import "Random";
 
+METHODS :: enum u8 { OLD; NEW; NEW_2; };
+METHOD :: METHODS.NEW_2;
+SHOW_ZONES :: false;
+
 main :: () {
 	defer report_memory_leaks();
 	init_resources(); defer deinit_resources();
@@ -19,9 +23,15 @@ main :: () {
 
 	shader_default := compile_shader_vf(VERT_DEFAULT, incl(dstheader(fb_gbuffer), FRAG_EXTENDED));
 	defer deinit(*shader_default);
-	shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), FRAG_SCREEN_SHOW_COLOR));
-	// shader_screen_pass := compile_shader_vf(VERT_SCREEN_QUAD, FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED);
-	defer deinit(*shader_screen_pass);
+
+	#if METHOD == .OLD {
+		shader_apply_light_simple := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), FRAG_APPLY_LIGHT_SIMPLE));
+		defer deinit(*shader_apply_light_simple);
+	} else {
+		shader_copy_depth := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheader(fb_gbuffer), FRAG_COPY_DEPTH));
+		defer deinit(*shader_copy_depth);		
+	}
+
 	shader_light_points := compile_shader_vf(VERT_LIGHT_POINT, FRAG_LIGHT_POINT);
 	defer deinit(*shader_light_points);
 	shader_light_zones_debug := compile_shader_vf(VERT_LIGHT_ZONE, incl(FRAG_LIGHT_ZONE_DEBUG));
@@ -41,12 +51,30 @@ main :: () {
 		brightness : float;
 	};
 
-	NUM_LIGHTS :: 500;
-	colors : [NUM_LIGHTS]Vector3;
+	#if METHOD == .OLD {
+		NUM_LIGHTS :: 75;		
+	} else #if METHOD == .NEW {
+		NUM_LIGHTS :: 8000;
+	} else {
+		NUM_LIGHTS :: 28000;		
+	}
 
-	phis, rads, yfreqs, yphases : [NUM_LIGHTS]float;
+	colors := NewArray(NUM_LIGHTS, Vector3);
+	defer array_free(colors);
+	 // [NUM_LIGHTS]Vector3;
 
-	for * rads it.* = pow(random_get_within_range(1, 300), 0.5);
+	phis := NewArray(NUM_LIGHTS, float);
+	defer array_free(phis);
+	rads := NewArray(NUM_LIGHTS, float);
+	defer array_free(rads);
+	yfreqs := NewArray(NUM_LIGHTS, float);
+	defer array_free(yfreqs);
+	yphases := NewArray(NUM_LIGHTS, float);
+	defer array_free(yphases);
+
+	// phis, rads, yfreqs, yphases : [NUM_LIGHTS]float;
+
+	for * rads it.* = pow(random_get_within_range(1, NUM_LIGHTS / 4), 0.5);
 	for * phis it.* = random_get_within_range(0, PI * 2);
 	for * yfreqs it.* = random_get_within_range(1, 2);
 	for * yphases it.* = random_get_within_range(0, PI * 2);
@@ -62,7 +90,7 @@ main :: () {
 
 	glEnable(GL_CULL_FACE);
 	check_gl_error();
-	for window_cycle(print_statistical_fps = true) {
+	for window_cycle(print_statistical_fps = true, fps_log_period = 100) {
 		for Events if it.type == {
 			case .KEY; using it.key_event;
 			if type == .PRESS ifx keycode == {
@@ -104,102 +132,115 @@ main :: () {
 			clear_target(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 			glEnable(GL_DEPTH_TEST);
 			// glDepthMask(GL_TRUE);
-			use(*shader_screen_pass);
-				// bind(5, ssbo_light);
-				bind_as_source(fb_gbuffer);
+			#if METHOD != .OLD {
+				use(*shader_copy_depth);
+					// bind(5, ssbo_light);
+					bind_as_source(fb_gbuffer);				
+			} else {
+				use(*shader_apply_light_simple);
+					bind(5, ssbo_light);
+					bind_as_source(fb_gbuffer);
+			}
 			draw_empty_mesh(6);
 
-			// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			// for *shader_light_zones_debug {
-			// 	set("u_rows", cast(u32)10);
-			// 	set("u_columns", cast(u32)10);
-			// 	bind(5, ssbo_light);
-			// 	draw_empty_mesh_instanced(10 * 10 * 6, NUM_LIGHTS);
-			// }
-			// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			#if METHOD != .OLD {
+				#if SHOW_ZONES {
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+					for *shader_light_zones_debug {
+						#if METHOD == .NEW {
+							set("u_rows", cast(u32)10);
+							set("u_columns", cast(u32)10);
+							bind(5, ssbo_light);
+							draw_empty_mesh_instanced(10 * 10 * 6, NUM_LIGHTS);
+						} else {
+							draw_empty_mesh_instanced(36, NUM_LIGHTS);						
+						}
+					}
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);					
+				}
 
-			glDepthFunc(GL_GREATER);
-			glCullFace(GL_FRONT);
-			glDepthMask(GL_FALSE);
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+				glDepthFunc(GL_GREATER);
+				glCullFace(GL_FRONT);
+				glDepthMask(GL_FALSE);
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-			for *shader_light_zones {
-				set("u_rows", cast(u32)10);
-				set("u_columns", cast(u32)10);
-				bind(5, ssbo_light);
-				bind_as_source(fb_gbuffer);
-				draw_empty_mesh_instanced(10 * 10 * 6, NUM_LIGHTS);
+				for *shader_light_zones {
+					bind(5, ssbo_light);
+					bind_as_source(fb_gbuffer);
+					#if METHOD == .NEW {
+						set("u_rows", cast(u32)10);
+						set("u_columns", cast(u32)10);
+						draw_empty_mesh_instanced(10 * 10 * 6, NUM_LIGHTS);
+					} else {
+						draw_empty_mesh_instanced(36, NUM_LIGHTS);						
+					}
+				}
+
+				glDisable(GL_BLEND);
+				glDepthMask(GL_TRUE);
+				glCullFace(GL_BACK);
+				glDepthFunc(GL_LESS);
+
 			}
-
-			glDisable(GL_BLEND);
-			glDepthMask(GL_TRUE);
-			glCullFace(GL_BACK);
-			glDepthFunc(GL_LESS);
-
 			for *shader_light_points {
 				bind(5, ssbo_light);
 				bind_as_source(fb_gbuffer);
 				draw_empty_mesh_instanced(36, NUM_LIGHTS);
 			}
-
 			glDisable(GL_DEPTH_TEST);
 
 		check_gl_error();
 	}
 }
 
-FRAG_SCREEN_SHOW_COLOR_MULTISAMPLED :: #run incl(UBO_SCREEN_METRICS, #string GLSL
-	layout(binding = 0) uniform sampler2DMS u_depth;
-	layout(binding = 1) uniform sampler2DMS u_color;
-	layout(binding = 2) uniform sampler2DMS u_normal;
-	layout(binding = 3) uniform sampler2DMS u_position;
-
+FRAG_COPY_DEPTH :: #run incl(UBO_TIME_INFO, UBO_CAMERA_PROPERTIES, #string GLSL
 	in vec2 vo_uv;
 	out vec4 o_color;
 
-	const int u_samples = 8;
-	vec4 texture_average(sampler2DMS source, vec2 uv) {
-		vec4 result = vec4(0);
-		for(int i = 0; i < u_samples; i++) {
-			result += texelFetch(source, ivec2(uv * u_window_size), i);
-		}
-		return result / u_samples;
-	}
-	
 	void main() {
-		vec2 screen_size = vec2(1280, 720);
 		vec2 uv = vo_uv;
-		vec3 color;
-
-		if(uv.y > .5) {
-			uv.y = uv.y * 2 - 1;
-			if(uv.x > .5) {
-				uv.x = uv.x * 2 - 1;
-				color = texture_average(u_color, uv).xyz;
-			} else {
-				uv.x = uv.x * 2;
-				color = texture_average(u_depth, uv).xxx;
-			}
-		} else {
-			uv.y = uv.y * 2;
-			if(uv.x > .5) {
-				uv.x = uv.x * 2 - 1;
-				color = texture_average(u_normal, uv).xyz;
-			} else {
-				uv.x = uv.x * 2;
-				color = texture_average(u_position, uv).xyz;
-			}
-		}
-		o_color = vec4(color, 1);
+		gl_FragDepth = texture(u_depth, uv).x;
 	}
 GLSL);
-FRAG_SCREEN_SHOW_COLOR :: #run incl(UBO_TIME_INFO, UBO_CAMERA_PROPERTIES, #string GLSL
+
+FRAG_APPLY_LIGHT_SIMPLE :: #run incl(UBO_TIME_INFO, UBO_CAMERA_PROPERTIES, #string GLSL
 	in vec2 vo_uv;
+
+	in struct Point_Source {
+		vec3 center;
+		float range;
+		vec3 color;
+		float brightness;
+	} vo;
+
+	vec3 get_light(in vec3 base_color, in vec3 pos, in vec3 normal, in Point_Source source) {
+		float ls = length(source.center - pos) / source.range;
+
+		float att = 1 - smoothstep(0.5, 1., ls);
+
+		return base_color * source.color * source.brightness * att;
+	}
+
 	out vec4 o_color;
+
+	layout(std430, binding = 5) buffer ssbo_light {
+		uint u_point_sources_count;
+		Point_Source u_point_sources[];
+	};
 
 	void main() {
 		vec2 uv = vo_uv;
+		vec3 color = texture(u_color, uv).xyz;
+		vec3 normal = texture(u_normal, uv).xyz;
+		vec3 pos = texture(u_position, uv).xyz;
+
+		vec3 result = vec3(0);
+		for(int i = 0; i < u_point_sources_count; i++) {
+			result += get_light(color, pos, normal, u_point_sources[i]);
+		}
+
+		o_color = vec4(result, 1);
 		gl_FragDepth = texture(u_depth, uv).x;
 	}
 GLSL);
@@ -275,6 +316,7 @@ FRAG_LIGHT_ZONE :: #run incl(DSTHEADER_DEFAULT, UBO_CAMERA_PROPERTIES, UBO_SCREE
 		o_color = vec4(total_light, 1);
 	}
 GLSL);
+
 FRAG_LIGHT_ZONE_DEBUG :: #run incl(DSTHEADER_DEFAULT, UBO_CAMERA_PROPERTIES, UBO_SCREEN_METRICS,  #string GLSL
 	in struct Point_Source {
 		vec3 center;
@@ -288,6 +330,7 @@ FRAG_LIGHT_ZONE_DEBUG :: #run incl(DSTHEADER_DEFAULT, UBO_CAMERA_PROPERTIES, UBO
 	}
 GLSL);
 
+#if METHOD == .NEW {
 VERT_LIGHT_ZONE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	struct Point_Source {
 		vec3 center;
@@ -333,6 +376,53 @@ VERT_LIGHT_ZONE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 		vo = ps;
 	}
 GLSL);
+} else {
+VERT_LIGHT_ZONE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+	struct Point_Source {
+		vec3 center;
+		float range;
+		vec3 color;
+		float brightness;
+	};
+	layout(std430, binding = 5) buffer ssbo_light {
+		uint u_point_sources_count;
+		Point_Source u_point_sources[];
+	};
+
+	out struct Point_Source {
+		vec3 center;
+		float range;
+		vec3 color;
+		float brightness;
+	} vo;
+
+	uniform uint u_rows;
+	uniform uint u_columns;
+	const float PI = 3.14159265359;
+
+	vec3 gen_vertice_cube() {
+		vec3 points[8] = vec3[8](
+			vec3( 1, -1, -1), vec3( 1, -1,  1),
+			vec3(-1, -1,  1), vec3(-1, -1, -1),
+			vec3( 1,  1, -1), vec3( 1,  1,  1),
+			vec3(-1,  1,  1), vec3(-1,  1, -1)
+		);
+		int indices[36] = int[36](
+			1, 2, 3, 7, 6, 5, 4, 5, 1, 5, 6, 2,
+			2, 6, 7, 0, 3, 7, 0, 1, 3, 4, 7, 5,
+			0, 4, 1, 1, 5, 2, 3, 2, 7, 4, 0, 7
+		);
+		return points[indices[gl_VertexID]];
+	}
+
+	void main() {
+		Point_Source ps = u_point_sources[gl_InstanceID];
+		vec3 pos = gen_vertice_cube() * ps.range + ps.center;
+		gl_Position = u_mat_trp * vec4(pos, 1);
+		vo = ps;
+	}
+GLSL);
+}
 FRAG_GRID :: #string GLSL
 	in struct VO {
 		vec3 position;

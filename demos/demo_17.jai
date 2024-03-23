@@ -185,7 +185,7 @@ main :: () {
 				float_range(*julia_offset.x, -4, 4, "x = %");
 				float_range(*julia_offset.y, -4, 4, "y = %");
 				float_range(*julia_offset.z, -4, 4, "z = %");
-		ui_end();
+			ui_end();
 		check_gl_error();
 
 		if maybe_switch && !ui_state.ui_interacted_this_frame switch_cursor_lock();
