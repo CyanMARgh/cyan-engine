@@ -2,3 +2,4 @@ screenshots/
 main
 .build
 execs/
+build_log.txt
