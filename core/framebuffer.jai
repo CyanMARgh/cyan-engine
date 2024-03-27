@@ -15,7 +15,7 @@ Framebuffer :: struct {
 FB_Attachment :: struct {
 	name : string;
 	attachment_type : enum u8 { NONE; DEPTH; COLOR; } = .NONE;
-	format, chanels_type, data_type : GLenum;
+	format : GLenum;
 }
 srcheader :: (builder : *String_Builder, using framebuffer : Framebuffer, postfix : string, offset : int) {
 	if samples {
@@ -50,12 +50,18 @@ srcheaders :: (framebuffers : ..Framebuffer) -> string {
 }
 
 channels_type_to_name :: (chanels_type : GLenum) -> string {
-	result := "";
+	result := "";	
+
 	if chanels_type == {
-		case GL_RGBA; result = "vec4";
-		case GL_RGB; result = "vec3";
-		case GL_DEPTH_COMPONENT; result = "float";
-		case GL_RED; result = "float";
+		case GL_RGBA32F; #through;
+		case GL_RGBA16F; #through;
+		case GL_RGBA8; result = "vec4";
+		case GL_RGB32F; #through;
+		case GL_RGB16F; #through;
+		case GL_RGB8; result = "vec3";
+		case GL_DEPTH_COMPONENT32; #through;
+		case GL_R32F; #through;
+		case GL_R8; result = "float";
 	}
 	assert(result != "");
 	return result;
@@ -68,7 +74,7 @@ dstheader :: (using framebuffer : Framebuffer) -> string {
 		using att := attachments[it];
 		if attachment_type != .COLOR continue;
 		print_to_builder(*builder, "#define O_%\n", uppercase(name));
-		print_to_builder(*builder, "layout(location = %1) out %2 o_%3;\n", color_attachment, channels_type_to_name(chanels_type), name);
+		print_to_builder(*builder, "layout(location = %1) out %2 o_%3;\n", color_attachment, channels_type_to_name(format), name);
 		color_attachment += 1;
 	}
 	return builder_to_string(*builder,, temp);
@@ -96,7 +102,7 @@ make_framebuffer :: (_width : s32, _height : s32, _attachments : ..FB_Attachment
 			color_attachments_count += 1;			
 		}
 		// print("+ attachment\n");
-		texture := make_texture_buffer(width, height, .{fba.format, fba.chanels_type, fba.data_type, samples, 0});
+		texture := make_texture_buffer(width, height, .{fba.format, samples, 0});
 		glFramebufferTexture2D(GL_FRAMEBUFFER, gl_attachment_type, texture.category, texture.id, 0);
 		textures[attachments_count] = texture;
 		attachments[attachments_count] = fba;

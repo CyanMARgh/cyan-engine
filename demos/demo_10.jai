@@ -10,12 +10,12 @@ main :: () {
 	init_default_graphics(); defer deinit_default_graphics();
 
 	fb_gbuffer := make_framebuffer(1280, 720, 
-		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"normal", .COLOR, GL_RGB32F, GL_RGB, GL_FLOAT},
-		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"metallic_roughness", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"emissive", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT}
+		.{"depth", .DEPTH, GL_DEPTH_COMPONENT32},
+		.{"color", .COLOR, GL_RGB8},
+		.{"normal", .COLOR, GL_RGB16F},
+		.{"position", .COLOR, GL_RGB16F},
+		.{"metallic_roughness", .COLOR, GL_RGB8},
+		.{"emissive", .COLOR, GL_RGB16F}
 		// ,samples = 8
 	);
 	defer deinit(*fb_gbuffer);

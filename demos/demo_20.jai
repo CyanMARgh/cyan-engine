@@ -11,12 +11,12 @@ main :: () {
 	init_default_graphics(); defer deinit_default_graphics();
 
 	fb_reflection := make_framebuffer(backend_state.window_metrics.size / SCALE, 
-		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE}
+		.{"depth", .DEPTH, GL_DEPTH_COMPONENT32},
+		.{"color", .COLOR, GL_RGB8}
 	);
 	defer deinit(*fb_reflection);
 	fb_reflection_blured_h := make_framebuffer(backend_state.window_metrics.size / SCALE,
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE}
+		.{"color", .COLOR, GL_RGB8}
 	);
 	defer deinit(*fb_reflection_blured_h);
 

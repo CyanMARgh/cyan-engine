@@ -27,14 +27,10 @@ main :: () {
 		update_default_camera();
 
 		glClearColor(.7, .8, .9, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		glClear(GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		use(*shader_triangle);
-		draw(mesh_triangle);
+			draw(mesh_triangle);
 	}
 }
 

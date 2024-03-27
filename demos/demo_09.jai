@@ -12,23 +12,23 @@ main :: () {
 	init_default_graphics(); defer deinit_default_graphics();
 
 	fb_gbuffer_ms := make_framebuffer(backend_state.window_metrics.size, 
-		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
+		.{"depth", .DEPTH, GL_DEPTH_COMPONENT32},
+		.{"color", .COLOR, GL_RGB8},
+		.{"normal", .COLOR, GL_RGB16F},
+		.{"position", .COLOR, GL_RGB16F},
 		samples = 4
 	);
 	defer deinit(*fb_gbuffer_ms);
 	fb_gbuffer := make_framebuffer(backend_state.window_metrics.size, 
-		.{"depth", .COLOR, GL_R32F, GL_RED, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT}
+		.{"depth", .COLOR, GL_R32F},
+		.{"color", .COLOR, GL_RGB8},
+		.{"normal", .COLOR, GL_RGB16F},
+		.{"position", .COLOR, GL_RGB16F}
 	);
 	defer deinit(*fb_gbuffer);
 
 	fb_ssao_raw := make_framebuffer(backend_state.window_metrics.size, 
-		.{"occlusion_raw", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
+		.{"occlusion_raw", .COLOR, GL_RGB8},
 	);
 	defer deinit(*fb_ssao_raw);
 

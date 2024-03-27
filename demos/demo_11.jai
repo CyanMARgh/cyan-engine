@@ -20,7 +20,7 @@ main :: () {
 	defer deinit(*source_cubemap);
 
 	BRDF_RESOLUTION :: 128;
-	texture_brdf := make_texture_buffer(BRDF_RESOLUTION, BRDF_RESOLUTION, .{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 0, GL_TEXTURE_2D});
+	texture_brdf := make_texture_buffer(BRDF_RESOLUTION, BRDF_RESOLUTION, .{GL_RGB8, 0, GL_TEXTURE_2D});
 	defer deinit(*texture_brdf);
 	{
 		shader_prerender := compile_shader_vf(incl(defs("NOFLIP"), VERT_SCREEN_QUAD), FRAG_BRDF);

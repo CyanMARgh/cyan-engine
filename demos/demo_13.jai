@@ -9,13 +9,13 @@ main :: () {
 	init_default_graphics(); defer deinit_default_graphics();
 
 	fb_transparent := make_framebuffer(1280, 720, 
-		.{"accum", .COLOR, GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT},
-		.{"reveal", .COLOR, GL_R8, GL_RED, GL_FLOAT},
+		.{"accum", .COLOR, GL_RGBA16F},
+		.{"reveal", .COLOR, GL_R8},
 	);
 	defer deinit(*fb_transparent);
 	fb_solid := make_framebuffer(1280, 720, 
-		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE}
+		.{"depth", .DEPTH, GL_DEPTH_COMPONENT32},
+		.{"color", .COLOR, GL_RGBA8}
 	);
 	defer deinit(*fb_solid);
 

@@ -34,7 +34,6 @@ main :: () {
 	ubo_slice_camera := make_ubo(UBO_Content_Camera);
 	defer deinit(*ubo_slice_camera);
 
-
 	// glEnable(GL_CULL_FACE);
 	for window_cycle() {
 		maybe_switch := false;
@@ -51,7 +50,7 @@ main :: () {
 		}
 		update_default_camera();
 
-		glClearColor(.7, .8, .9, 1);
+		glClearColor(0, 0, 0, 1);
 		// glClearStencil(0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -65,9 +64,8 @@ main :: () {
 			mat_r := Matrix4_Identity;
 			FAR := 100.;
 			NEAR := 0.;
-			scale := 0.18;
 			mat_p := Matrix4.{
-				backend_state.window_metrics.height_over_width, 0, 0, 0,
+				1, 0, 0, 0,
 				0, 1, 0, 0,
 				0, 0, -2/(FAR-NEAR), -(FAR+NEAR)/(FAR-NEAR),
 				0, 0, 0, 1
@@ -86,7 +84,8 @@ main :: () {
 		{
 			bind(1, ubo_slice_camera);
 			defer bind(1, graphics_state.ubo_default_camera);
-			
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
 			glEnable(GL_STENCIL_TEST);
 			defer glDisable(GL_STENCIL_TEST);
 
@@ -100,6 +99,7 @@ main :: () {
 					}
 				}
 			}
+			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 			glStencilFunc(GL_EQUAL, 1, 0x01);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -107,10 +107,6 @@ main :: () {
 			for *shader_fill_white {
 				draw_empty_mesh(6);
 			}
-
-
-			// glClearColor(1., 1., 1., 1.);
-			// glClear(GL_COLOR_BUFFER_BIT);
 		}
 
 		// glClearStencil(0);

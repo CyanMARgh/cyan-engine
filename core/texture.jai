@@ -23,7 +23,7 @@ deinit :: (using image : *Image) {
 
 // TODO for now storage_format.category ignored when passed as argument
 Texture_Storage_Format :: struct {
-	format, chanels_type, data_type : GLenum;
+	format : GLenum;
 	samples : u8; // 0 means no multisampling
 	category : GLenum;
 }
@@ -41,14 +41,14 @@ make_texture_buffer :: (width : s32, height : s32, using storage_format : Textur
 	if samples {
 		return make_texture_multisample(width, height, storage_format);
 	} else {
-		return make_texture(width, height, storage_format, null, .[
+		return make_texture(width, height, storage_format, .[
 			// GL_TEXTURE_MIN_FILTER, GL_NEAREST,
 			// GL_TEXTURE_MAG_FILTER, GL_NEAREST
 			GL_TEXTURE_WRAP_S, xx GL_CLAMP_TO_EDGE,
 			GL_TEXTURE_WRAP_T, xx GL_CLAMP_TO_EDGE,
 			GL_TEXTURE_MIN_FILTER, GL_LINEAR,
 			GL_TEXTURE_MAG_FILTER, GL_LINEAR
-		], false);
+		]);
 	}
 }
 
@@ -56,21 +56,22 @@ make_texture :: (
 	_width : s32, _height : s32,
 	_storage_format : Texture_Storage_Format,
 
-	src : *u8,
-
-	params : []GLenum, 
-	mipmap : bool
+	params : []GLenum
 ) -> Texture {
 	using result := Texture.{width = _width, height = _height, storage_format = _storage_format};
-	result.category = GL_TEXTURE_2D;
+	result.category = GL_TEXTURE_2D; // TODO maybe general
 
 	glGenTextures(1, *result.id);
 	glBindTexture(GL_TEXTURE_2D, result.id);
 		for i : 0..params.count/2-1 {
 			glTexParameteri(GL_TEXTURE_2D, xx params[i * 2], xx params[i * 2 + 1]);
 		}
-		glTexImage2D(GL_TEXTURE_2D, 0, xx format, xx width, xx height, 0, chanels_type, data_type, src);
-		if mipmap glGenerateMipmap(GL_TEXTURE_2D);
+		glTexStorage2D(
+			GL_TEXTURE_2D,
+			1,
+			xx format,
+			xx width, xx height
+		);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return result;
@@ -88,6 +89,7 @@ make_texture_multisample :: (
 
 	glGenTextures(1, *id);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
+	// print("glTexImage2DMultisample\n");
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format, xx width, xx height, GL_TRUE);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
@@ -101,12 +103,15 @@ load_texture_from_image :: (
 	wrap_t :u32=GL_REPEAT
 ) -> Texture, ok:bool {
 	if !image.pixels return .{}, false;
-	src_channels : GLenum;
+	format, src_channels : GLenum;
 	if layers == 1 {
+		format = GL_R8;
 		src_channels = GL_RED;
 	} else if layers == 3 {
+		format = GL_RGB8;
 		src_channels = GL_RGB;
 	} else if layers == 4 {
+		format = GL_RGBA8;
 		src_channels = GL_RGBA;
 	} else {
 		assert(false, "unknown format\n");
@@ -114,17 +119,22 @@ load_texture_from_image :: (
 	interpolation :u32= GL_LINEAR; 
 	// interpolation :u32= GL_LINEAR_MIPMAP_LINEAR;
 
-	return make_texture(
+	texture := make_texture(
 		width, height, 
-		.{format = src_channels, chanels_type = src_channels, data_type = GL_UNSIGNED_BYTE},
-		image.bytes.data, 
+		.{format = format},
 		.[
 			GL_TEXTURE_WRAP_S, xx GL_REPEAT,
 			GL_TEXTURE_WRAP_T, xx GL_REPEAT,
 			GL_TEXTURE_MIN_FILTER, interpolation,
 			GL_TEXTURE_MAG_FILTER, interpolation
-		], true
-	), true;
+		]
+	);
+	glBindTexture(texture.category, texture.id);
+		glTexSubImage2D(texture.category, 0, 0, 0, xx width, xx height, src_channels, GL_UNSIGNED_BYTE, pixels);
+		glGenerateMipmap(texture.category);
+	glBindTexture(texture.category, 0);
+
+	return texture, true;
 }
 load_texture_from_file :: (
 	path : string, expected_layers :u8= 4,
@@ -145,7 +155,7 @@ load_texture_from_file :: (
 }
 bind_sampler :: (slot : u32, using texture : Texture) {
 	glActiveTexture(GL_TEXTURE0 + slot);
-	glBindTexture(category, id);		
+	glBindTexture(category, id);
 }
 Sampler :: struct {
 	id : u32;
@@ -171,14 +181,118 @@ make_noise_texture :: (width : s32, height : s32) -> Texture {
 	for * source it.* = random_get_within_range(-1, 1);
 	texture := make_texture(
 		width, height, 
-		.{format = GL_RGBA32F, chanels_type = GL_RGB, data_type = GL_FLOAT},
-		xx source.data, .[
+		.{format = GL_RGBA32F}, .[
 			GL_TEXTURE_MIN_FILTER, GL_NEAREST,
 			GL_TEXTURE_MAG_FILTER, GL_NEAREST,
 			GL_TEXTURE_WRAP_S, GL_REPEAT,
 			GL_TEXTURE_WRAP_T, GL_REPEAT
-		], false
+		]
 	);
+	glBindTexture(texture.category, texture.id);
+		glTexSubImage2D(texture.category, 0, 0, 0, xx width, xx height, GL_RGB, GL_FLOAT, source.data);
+		glGenerateMipmap(texture.category);
+	glBindTexture(texture.category, 0);
 	array_free(source);
 	return texture;
 }
+
+New_Texture_Info :: struct {
+	format : GLenum;
+	category : GLenum;
+}
+
+New_Texture :: struct {
+	using info : New_Texture_Info;
+
+	id : u32;
+	width, height, depth : s32;
+	samples : u8;
+}
+deinit :: (using texture : *New_Texture) {
+	glDeleteTextures(1, *id);
+}
+
+make_test_texture_3d :: () -> New_Texture {
+	using result : New_Texture;
+	width, height, depth = 128;
+
+	category = GL_TEXTURE_3D;
+
+	glGenTextures(1, *id);
+	glBindTexture(category, id);
+		glTexImage3D(
+			category,
+			0,
+			GL_R8,
+			xx width, xx height, xx depth,
+			0,
+			GL_RED,
+			GL_UNSIGNED_BYTE,
+			null
+		);
+		glTexParameteri(category, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(category, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(category, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(category, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(category, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(category, 0);
+
+	check_gl_error();
+
+	return result;
+}
+make_empty_texture_3d :: (_format : GLenum, size : u32) -> New_Texture {
+	using result : New_Texture;
+	width, height, depth = xx size;
+
+	category = GL_TEXTURE_3D;
+	format = _format;
+
+	glGenTextures(1, *id);
+	glBindTexture(category, id);
+		glTexStorage3D(
+			category,
+			1,
+			xx format,
+			xx width, xx height, xx depth
+		);
+		glTexParameteri(category, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(category, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(category, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(category, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(category, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(category, 0);
+
+	check_gl_error();
+
+	return result;
+}
+
+make_stencil_texture :: (W : s32,  H : s32) -> New_Texture {
+	using result : New_Texture;
+	width, height, depth = W, H, 1;
+
+	category = GL_TEXTURE_2D;
+
+	glGenTextures(1, *id);
+	glBindTexture(category, id);
+		glTexImage2D(
+			GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, xx W, xx H, 0, 
+			GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, null
+		);
+
+		glTexParameteri(category, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(category, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(category, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(category, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(category, 0);
+
+	check_gl_error();
+
+	return result;
+}
+bind :: (slot : u32, using texture : New_Texture) {
+	glActiveTexture(GL_TEXTURE0 + slot);
+	glBindTexture(category, id);
+}
+// bind_image :: (slot : u32, )

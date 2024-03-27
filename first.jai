@@ -19,11 +19,12 @@ DEBUG :: true;
 // TODO atomics painter: autogenerate attributes header
 // TODO save texture binary/as file
 // TODO push target framebuffer metrics
+// TODO #define USE_MATERIAL_BLOCK
 
 BUILD_ALL :: false;
 RUN :: true;
-TOTAL_DEMOS :: 23;
-DEMO_ID :: 21;
+TOTAL_DEMOS :: 26;
+DEMO_ID :: 25;
 
 #run {
 	set_build_options_dc(.{do_output = false});
@@ -33,7 +34,7 @@ DEMO_ID :: 21;
 			#if OS == .LINUX {
 				if RUN {
 					make_link(it);
-					run_command("./main", #filepath);					
+					run_command(tprint("./execs/main_%", formatInt(it, minimum_digits = 2)), #filepath);					
 				}
 			}
 		}
@@ -42,7 +43,7 @@ DEMO_ID :: 21;
 			make_link(DEMO_ID);
 			if RUN {
 				make_link(DEMO_ID);
-				run_command("./main", #filepath);					
+				run_command(tprint("./execs/main_%", formatInt(DEMO_ID, minimum_digits = 2)), #filepath);
 			}
 		}
 	}
@@ -52,8 +53,10 @@ EXECS_DIR :: "execs";
 EXE_SUFFIX :: "";
 
 make_link :: (id : int) {
-	id_str := formatInt(id, minimum_digits = 2);
-	run_command("ln", "-s", "-f", tprint("./%1/main_%2%3", EXECS_DIR, id_str, EXE_SUFFIX), tprint("main%", EXE_SUFFIX));
+	#if OS == .LINUX {
+		id_str := formatInt(id, minimum_digits = 2);
+		run_command("ln", "-s", "-f", tprint("./%1/main_%2%3", EXECS_DIR, id_str, EXE_SUFFIX), tprint("main%", EXE_SUFFIX));
+	}
 }
 
 build :: (id : int, run := false) -> bool {
@@ -86,7 +89,8 @@ build :: (id : int, run := false) -> bool {
 
 	compiler_begin_intercept(w);
 	add_build_file(tprint("%/%", #filepath, root), w);
-	#if OS == .WINDOWS add_build_string("#run (#import \"Windows_Resources\").disable_runtime_console();", w);
+	add_build_string(tprint("DEBUG :: %;\n", DEBUG), w);
+	#if OS == .WINDOWS && !DEBUG add_build_string("#run (#import \"Windows_Resources\").disable_runtime_console();", w);
 	ok := true;
 	while 1 {
 		message := compiler_wait_for_message();

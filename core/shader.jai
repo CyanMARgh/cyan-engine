@@ -1,7 +1,4 @@
 GLSL_VERSION_LINE :: #run tprint("\t#version %\n", GL_REQUIRED_VERSION_MAJOR * 100 + GL_REQUIRED_VERSION_MINOR * 10);
-// #run {
-// 	print("GLSL_VERSION_LINE:\n%", GLSL_VERSION_LINE);
-// }
 
 Shader_Part :: struct {
 	id : u32;
@@ -9,7 +6,7 @@ Shader_Part :: struct {
 Shader :: struct {
 	id : u32;	
 	extra_fields : Table(string, s32);
-	// gsx, gsy, gsz : u32 = 8, 4, 1; // for compute shader only
+	gsx, gsy, gsz : u32 = 1, 1, 1;
 }
 
 incldefs :: (sources : ..string) -> string {
@@ -60,24 +57,44 @@ compile_shader_vf :: (src_vert : string, src_frag : string) -> Shader, ok:bool {
 	}
 	defer deinit(*frag);
 
-	id := glCreateProgram();
+	using result : Shader;
+	id = glCreateProgram();
 	glAttachShader(id, vert.id);
 	glAttachShader(id, frag.id);
 	glLinkProgram(id);
 
-	is_linked : GLint;
-	glGetProgramiv(id, GL_LINK_STATUS, *is_linked);
-	if !is_linked {
-		max_length : GLint;
-		glGetProgramiv(id, GL_INFO_LOG_LENGTH, xx *max_length);
-		info_log := cast(string)NewArray(max_length, u8,, temp);
-		glGetProgramInfoLog(id, xx max_length, xx *info_log.count, info_log.data);
-		print_color("failed to link shader:\n", color = .RED);
-		print_color("%", info_log, color = .YELLOW);
-		glDeleteProgram(id);
+	result, ok = filter_error(result);
+	return result, ok;
+}
+compile_shader_c :: (src_comp : string, gx :u32= 1, gy :u32= 1, gz :u32= 1) -> Shader, ok:bool {
+	comp, ok := compile_shader_part(
+		incl(
+			tprint("layout(local_size_x = %, local_size_y = %, local_size_z = %) in;", gx, gy, gz),
+			src_comp
+		),
+		GL_COMPUTE_SHADER
+	);
+	if !ok {
+		print_color("failed to compile compute shader\n", color = .RED);
 		return .{}, false;
 	}
-	return .{id = id}, true;
+	defer deinit(*comp);
+
+	using result := Shader.{gsx = gx, gsy = gy, gsz = gz};
+	id = glCreateProgram();
+	glAttachShader(id, comp.id);
+	glLinkProgram(id);
+
+	result, ok = filter_error(result);
+	return result, ok;
+}
+compute :: (using s : Shader, dimx : u32 = 1, dimy : u32 = 1, dimz : u32 = 1, barrier :u32=GL_ALL_BARRIER_BITS) {
+	sizelim :: 10000;
+	if dimx > 0 && dimy > 0 && dimz > 0 && dimx < sizelim && dimy < sizelim && dimz < sizelim {
+		sx, sy, sz := (dimx - 1) / gsx + 1, (dimy - 1) / gsy + 1, (dimz - 1) / gsz + 1;
+		glDispatchCompute(sx, sy, sz);
+		if barrier glMemoryBarrier(barrier);		
+	}
 }
 use :: (using s : *Shader) {
 	// print("s = %, %\n", s, s.id);
@@ -127,7 +144,6 @@ compile_shader_part :: (_source : string, type : u32) -> Shader_Part, ok:bool {
 			print_color("unable to parse error message\n", color = .YELLOW);
 			print("%\n", src);
 		}
-		// print("full shader source = \n%\n", source);
 		glDeleteShader(id);
 		return .{}, false;
 	}
@@ -171,10 +187,16 @@ set :: (s : *Shader, field : string, value : s32) {
 set :: (s : *Shader, field : string, value : ivec2) {
 	glUniform2i(find_id(s, field), value.x, value.y);
 }
+set :: (s : *Shader, field : string, value : ivec3) {
+	glUniform3i(find_id(s, field), value.x, value.y, value.z);
+}
 
 for_expansion :: (shader : *Shader, body : Code, flags : For_Flags) #expand {
 	`set :: (name : string, value : $T) #expand {
 		set(shader, name, value);
+	}
+	`compute :: (dimx : u32 = 1, dimy : u32 = 1, dimz : u32 = 1, barrier :u32=GL_ALL_BARRIER_BITS) #expand {
+		compute(shader, dimx, dimy, dimz, barrier);
 	}
 	`it, `it_index := 0;
 
@@ -183,44 +205,19 @@ for_expansion :: (shader : *Shader, body : Code, flags : For_Flags) #expand {
 	glUseProgram(0);
 }
 
-// with :: (s : *Shader, code : Code, dimx : u32, dimy : u32 = 1, dimz : u32 = 1, barrier := GL_ALL_BARRIER_BITS, sizelim : u32 = 100000) #expand {
-// 	assert(s.type == GL_COMPUTE_SHADER);
-// 	set :: (field : string, value : $T) #expand {
-// 		set(`s, field, value);
-// 	}
-// 	use(<<s);
-// 	#insert,scope() code;
-// 	compute(<<s, dimx, dimy, dimz, barrier, sizelim);
-// }
-
-
-// compile_part_with_preprocessor :: (source : string, options : Shader_Options) -> Shader_Src, ok:bool {
-// 	//====
-// }
-// preprocess :: (source : string, options : Shader_Options) -> Shader_Src, ok:bool {
-// 	lines := split(source, cast(u8) #char "\n");
-// 	result : [..]string;
-	
-// }
-// add_includes :: (source : Shader_Src, allocator := context.allocator, include_level := 5) -> Shader_Src, ok:bool {
-// 	result : [..]string; result.allocator = allocator;
-// 	for source {
-// 		// words
-// 	}
-
-// }
-
-// Shader_Src :: []string;
-// shader_includes : Table(string, Shader_Src);
-// deinit_shader_includes :: () {
-// 	for shader_includes {
-// 		array_free(it);
-// 	}
-// 	deinit(*shader_includes);
-// }
-// split_lines :: (text : string, allocator := context.allocator) -> Shader_Src {
-// 	return split(text, cast(u8) #char "\n", allocator);
-// }
-// add_shader_lib :: (name : string, source : string) {
-// 	table_add(shader_includes, name, split_lines(source));
-// }
+#scope_file
+filter_error :: (using shader : Shader) -> Shader, bool {
+	is_linked : GLint;
+	glGetProgramiv(id, GL_LINK_STATUS, *is_linked);
+	if !is_linked {
+		max_length : GLint;
+		glGetProgramiv(id, GL_INFO_LOG_LENGTH, xx *max_length);
+		info_log := cast(string)NewArray(max_length, u8,, temp);
+		glGetProgramInfoLog(id, xx max_length, xx *info_log.count, info_log.data);
+		print_color("failed to link shader:\n", color = .RED);
+		print_color("%", info_log, color = .YELLOW);
+		glDeleteProgram(id);
+		return .{}, false;
+	}
+	return .{id = id}, true;
+}

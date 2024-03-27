@@ -11,7 +11,7 @@ check_gl_error :: (loc := #caller_location) {
 		err := glGetError();
 		if !err break;
 		has_errors = true;
-		path := parse_path(loc.fully_pathed_filename).words;
+		path := parse_path(loc.fully_pathed_filename,, temp).words;
 		print_color("error at line %, %. code = %\n", loc.line_number, path[path. count-1], err, color = .RED);
 	}
 	#if FATAL_GL_ERROR_CHECK if has_errors exit(1);

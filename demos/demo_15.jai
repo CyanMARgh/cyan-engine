@@ -19,7 +19,7 @@ main :: () {
 	defer deinit(*texture);
 
 	fb_canvas := make_framebuffer(1280, 720,
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE}
+		.{"color", .COLOR, GL_RGB8}
 	);
 	defer deinit(*fb_canvas);
 

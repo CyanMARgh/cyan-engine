@@ -2,7 +2,9 @@ GL_REQUIRED_VERSION_MAJOR :: 4;
 GL_REQUIRED_VERSION_MINOR :: 3;
 
 init_resources :: (initial_size := ivec2.{1280, 720}) {
-	print("\e[0m");
+	#if OS == .LINUX {
+		print("\e[0m");
+	}
 	glfwInit();
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -85,6 +87,12 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 		}
 	}
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
+
+	for 0..2 {
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, xx it, *opengl_options.work_group_sizes[it]);
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, xx it, *opengl_options.work_group_counts[it]);
+	}
+	print("working groups max size/count: % / %\n", opengl_options.work_group_sizes, opengl_options.work_group_counts);
 }
 deinit_resources :: () {
 	glfwTerminate();
@@ -306,6 +314,11 @@ backend_state : struct {
 		target_delta_time : float;	
 	}
 	ubo_time_info : UBO;
+
+	opengl_options : struct {
+		work_group_sizes : [3]s32;
+		work_group_counts : [3]s32;
+	}
 };
 
 refresh_window_size :: (width : s32, height : s32) #c_call {

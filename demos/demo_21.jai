@@ -6,7 +6,7 @@
 
 METHODS :: enum u8 { OLD; NEW; NEW_2; };
 METHOD :: METHODS.NEW_2;
-SHOW_ZONES :: false;
+SHOW_ZONES :: true;
 
 main :: () {
 	defer report_memory_leaks();
@@ -14,10 +14,10 @@ main :: () {
 	init_default_graphics(); defer deinit_default_graphics();
 
 	fb_gbuffer := make_framebuffer(1280, 720, 
-		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT}
+		.{"depth", .DEPTH, GL_DEPTH_COMPONENT32},
+		.{"color", .COLOR, GL_RGB8},
+		.{"normal", .COLOR, GL_RGB16F},
+		.{"position", .COLOR, GL_RGB16F}
 	);
 	defer deinit(*fb_gbuffer);
 
@@ -51,7 +51,7 @@ main :: () {
 		brightness : float;
 	};
 
-	#if METHOD == .OLD {
+	#if METHOD == .OLD || SHOW_ZONES {
 		NUM_LIGHTS :: 75;		
 	} else #if METHOD == .NEW {
 		NUM_LIGHTS :: 8000;
@@ -146,6 +146,7 @@ main :: () {
 			#if METHOD != .OLD {
 				#if SHOW_ZONES {
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+					glEnable(GL_CULL_FACE);
 					for *shader_light_zones_debug {
 						#if METHOD == .NEW {
 							set("u_rows", cast(u32)10);

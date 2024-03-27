@@ -15,12 +15,12 @@ main :: () {
 	init_default_graphics(); defer deinit_default_graphics();
 
 	fb_gbuffer_ms := make_framebuffer(backend_state.window_metrics.size, 
-		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"position", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"metallic_roughness", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"emissive", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
+		.{"depth", .DEPTH, GL_DEPTH_COMPONENT32},
+		.{"color", .COLOR, GL_RGB8},
+		.{"normal", .COLOR, GL_RGB16F},
+		.{"position", .COLOR, GL_RGB16F},
+		.{"metallic_roughness", .COLOR, GL_RGB8},
+		.{"emissive", .COLOR, GL_RGB8},
 		samples = 4
 	);
 	defer deinit(*fb_gbuffer_ms);
@@ -37,11 +37,11 @@ main :: () {
 
 	ssao_quality := ivec2.{1280, 720};
 	fb_ssao_raw := make_framebuffer(backend_state.window_metrics.size, 
-		.{"occlusion_raw", .COLOR, GL_RED, GL_RED, GL_UNSIGNED_BYTE},
+		.{"occlusion_raw", .COLOR, GL_R8},
 	);
 	defer deinit(*fb_ssao_raw);
 	fb_ssao_blurred := make_framebuffer(backend_state.window_metrics.size, 
-		.{"occlusion", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
+		.{"occlusion", .COLOR, GL_RGB8},
 	);
 	defer deinit(*fb_ssao_blurred);
 
@@ -76,7 +76,7 @@ main :: () {
 	assert(ok);
 	defer deinit(*source_cubemap);
 	BRDF_RESOLUTION :: 128;
-	texture_brdf := make_texture_buffer(BRDF_RESOLUTION, BRDF_RESOLUTION, .{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 0, GL_TEXTURE_2D});
+	texture_brdf := make_texture_buffer(BRDF_RESOLUTION, BRDF_RESOLUTION, .{GL_RGB8, 0, GL_TEXTURE_2D});
 	defer deinit(*texture_brdf);
 	{
 		shader_prerender := compile_shader_vf(incl(defs("NOFLIP"), VERT_SCREEN_QUAD), FRAG_BRDF);

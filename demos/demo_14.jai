@@ -9,18 +9,18 @@ main :: () {
 	init_default_graphics(); defer deinit_default_graphics();
 
 	fb_gbuffer := make_framebuffer(1280, 720, 
-		.{"depth", .DEPTH, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT},
-		.{"color", .COLOR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-		.{"normal", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT},
-		.{"position", .COLOR, GL_RGB32F, GL_RGB, GL_FLOAT}
+		.{"depth", .DEPTH, GL_DEPTH_COMPONENT32},
+		.{"color", .COLOR, GL_RGB8},
+		.{"normal", .COLOR, GL_RGB16F},
+		.{"position", .COLOR, GL_RGB32F}
 	);
 	defer deinit(*fb_gbuffer);
 	fb_depth_filtered := make_framebuffer(1280, 720,
-		.{"depth_filtered", .COLOR, GL_R32F, GL_RED, GL_FLOAT}
+		.{"depth_filtered", .COLOR, GL_R32F}
 	);
 	defer deinit(*fb_depth_filtered);
 	fb_edges := make_framebuffer(1280, 720,
-		.{"edges", .COLOR, GL_RGB16F, GL_RGB, GL_FLOAT} // TODO to GL_RGB
+		.{"edges", .COLOR, GL_RGB16F} // TODO to GL_RGB
 	);
 	defer deinit(*fb_edges);
 
