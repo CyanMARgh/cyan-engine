@@ -8,19 +8,28 @@ main :: () {
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	shader_default := compile_shader_vf(VERT_DEFAULT, FRAG_SHOW_NORMAL);
+	shader_default := compile_shader_vf(VERT_DEFAULT, incl(DSTHEADER_DEFAULT, FRAG_EXTENDED));
 	defer deinit(*shader_default);
-	// loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
-	loaded_assets := load_assets("./res/shapes.glb");
-	defer deinit(*loaded_assets);
+	shader_show_normals := compile_shader_vf(VERT_DEFAULT, FRAG_SHOW_NORMAL);
+	defer deinit(*shader_default);
+
+	model_helmet := load_assets("./res/helmet/DamagedHelmet.gltf");
+	defer deinit(*model_helmet);
+
+	model_shapes := load_assets("./res/shapes.glb");
+	defer deinit(*model_shapes);
 
 	glEnable(GL_CULL_FACE);
+
+	graphics_state.default_camera = .{.{yaw = 5.759186, pitch = -0.256, position = .{-6.495933, 7.488822, 16.237715}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}}, 10, 0.15, 0.002, 1.570796};
+ 
 	for window_cycle() {
 		for Events if it.type == {
 			case .KEY; using it.key_event;
 			if type == .PRESS ifx keycode == {
 				case GLFW_KEY_ESCAPE; exit();
 				case #char"P"; screenshot();
+				case #char"C"; print("camera = %\n", graphics_state.default_camera);
 			}
 			case .MOUSE_BUTTON; using it.mouse_button_event;
 			if button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS {
@@ -31,8 +40,14 @@ main :: () {
 		glClearColor(.7, .8, .9, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
-		use(*shader_default);
-			draw_all_roots(loaded_assets);
+		for *shader_show_normals {
+			draw_all_roots(model_shapes);
+		}
+		for *shader_default {
+			for translate(.{-2, 6, 0}) {
+				for scale(3) draw_all_roots(model_helmet);
+			}			
+		}
 	}
 }
 

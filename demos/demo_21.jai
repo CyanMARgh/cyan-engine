@@ -6,7 +6,7 @@
 
 METHODS :: enum u8 { OLD; NEW; NEW_2; };
 METHOD :: METHODS.NEW_2;
-SHOW_ZONES :: true;
+SHOW_ZONES :: false;
 
 main :: () {
 	defer report_memory_leaks();
