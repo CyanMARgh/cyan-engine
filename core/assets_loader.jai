@@ -37,7 +37,7 @@ draw :: (using primitive : Primitive, loaded_assets : Loaded_Assets) {
 		bind(material);
 		for material.textures.as_array {
 			if it == -1 continue;
-			bind_sampler(xx it_index, loaded_assets.textures[it]);
+			bind(xx it_index, loaded_assets.textures[it]);
 		}		
 	} else {
 

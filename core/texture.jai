@@ -32,9 +32,9 @@ Sampling_Options :: struct {
 }
 
 Texture :: struct {
+	using storage_format : Texture_Storage_Format;
 	id : u32;
-	width, height : s32;
-	using storage_format : Texture_Storage_Format; // TODO move to Texture_Base
+	width, height, depth : s32 = 1;
 }
 
 make_texture_buffer :: (width : s32, height : s32, using storage_format : Texture_Storage_Format) -> Texture {
@@ -153,7 +153,7 @@ load_texture_from_file :: (
 	check_gl_error();
 	return texture, ok;
 }
-bind_sampler :: (slot : u32, using texture : Texture) {
+bind :: (slot : u32, using texture : Texture) {
 	glActiveTexture(GL_TEXTURE0 + slot);
 	glBindTexture(category, id);
 }
@@ -196,53 +196,8 @@ make_noise_texture :: (width : s32, height : s32) -> Texture {
 	return texture;
 }
 
-New_Texture_Info :: struct {
-	format : GLenum;
-	category : GLenum;
-}
-
-New_Texture :: struct {
-	using info : New_Texture_Info;
-
-	id : u32;
-	width, height, depth : s32;
-	samples : u8;
-}
-deinit :: (using texture : *New_Texture) {
-	glDeleteTextures(1, *id);
-}
-
-make_test_texture_3d :: () -> New_Texture {
-	using result : New_Texture;
-	width, height, depth = 128;
-
-	category = GL_TEXTURE_3D;
-
-	glGenTextures(1, *id);
-	glBindTexture(category, id);
-		glTexImage3D(
-			category,
-			0,
-			GL_R8,
-			xx width, xx height, xx depth,
-			0,
-			GL_RED,
-			GL_UNSIGNED_BYTE,
-			null
-		);
-		glTexParameteri(category, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(category, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(category, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(category, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(category, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glBindTexture(category, 0);
-
-	check_gl_error();
-
-	return result;
-}
-make_empty_texture_3d :: (_format : GLenum, size : u32) -> New_Texture {
-	using result : New_Texture;
+make_empty_texture_3d :: (_format : GLenum, size : u32) -> Texture {
+	using result : Texture;
 	width, height, depth = xx size;
 
 	category = GL_TEXTURE_3D;
@@ -256,8 +211,8 @@ make_empty_texture_3d :: (_format : GLenum, size : u32) -> New_Texture {
 			xx format,
 			xx width, xx height, xx depth
 		);
-		glTexParameteri(category, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(category, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(category, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(category, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(category, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(category, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(category, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -268,8 +223,8 @@ make_empty_texture_3d :: (_format : GLenum, size : u32) -> New_Texture {
 	return result;
 }
 
-make_stencil_texture :: (W : s32,  H : s32) -> New_Texture {
-	using result : New_Texture;
+make_stencil_texture :: (W : s32,  H : s32) -> Texture {
+	using result : Texture;
 	width, height, depth = W, H, 1;
 
 	category = GL_TEXTURE_2D;
@@ -291,8 +246,3 @@ make_stencil_texture :: (W : s32,  H : s32) -> New_Texture {
 
 	return result;
 }
-bind :: (slot : u32, using texture : New_Texture) {
-	glActiveTexture(GL_TEXTURE0 + slot);
-	glBindTexture(category, id);
-}
-// bind_image :: (slot : u32, )

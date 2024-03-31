@@ -89,9 +89,10 @@ compile_shader_c :: (src_comp : string, gx :u32= 1, gy :u32= 1, gz :u32= 1) -> S
 	return result, ok;
 }
 compute :: (using s : Shader, dimx : u32 = 1, dimy : u32 = 1, dimz : u32 = 1, barrier :u32=GL_ALL_BARRIER_BITS) {
-	sizelim :: 10000;
+	sizelim :: 1 << 20;
 	if dimx > 0 && dimy > 0 && dimz > 0 && dimx < sizelim && dimy < sizelim && dimz < sizelim {
 		sx, sy, sz := (dimx - 1) / gsx + 1, (dimy - 1) / gsy + 1, (dimz - 1) / gsz + 1;
+		// print("%, %, % : %, %, % : %, %, %\n", dimx, dimy, dimz, gsx, gsy, gsz, sx, sy, sz);
 		glDispatchCompute(sx, sy, sz);
 		if barrier glMemoryBarrier(barrier);		
 	}
