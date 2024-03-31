@@ -117,7 +117,7 @@ main :: () {
 
 	slice_coord := .5;
 	glEnable(GL_CULL_FACE);
-	for window_cycle(capture_video = true) {
+	for window_cycle() {
 		for Events if it.type == {
 			case .KEY; using it.key_event;
 			if type == .PRESS ifx keycode == {
@@ -188,7 +188,7 @@ COMP_GEN_OCCLUSION :: #string GLSL
 	const float PI = 3.14159265;
 
 	vec4 find_occlusion(vec3 p, float r, float r2) {
-		const int QUALITY = 40000;
+		const int QUALITY = 10000;
 		const int STEPS = 40;
 		const int SAMPLES = QUALITY / STEPS;
 		float step_size = r / STEPS;
