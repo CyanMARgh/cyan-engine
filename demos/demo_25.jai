@@ -7,7 +7,7 @@ main :: () {
 	defer report_memory_leaks();
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
-	init_ui(); defer deinit_ui();
+	// init_ui(); defer deinit_ui();
 
 	shader_default := compile_shader_vf(VERT_DEFAULT, incl(DSTHEADER_DEFAULT, FRAG_EXTENDED));
 	defer deinit(*shader_default);
@@ -143,6 +143,7 @@ main :: () {
 		glClearColor(.7, .8, .9, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		slice_coord = sin(backend_state.current_time) * .5 + .5;
 		for *shader_show_texture {
 			bind(0, texture_model_slices);
 			set("u_slice_resolution", ivec2.{texture_model_slices.width, texture_model_slices.height});
@@ -152,9 +153,9 @@ main :: () {
 		}
 
 		clear_target(GL_DEPTH_BUFFER_BIT);
-		ui_begin();
-			float_range(*slice_coord, 0., 1., "z = %");
-		ui_end();
+		// ui_begin();
+		// 	float_range(*slice_coord, 0., 1., "z = %");
+		// ui_end();
 
 		// if maybe_switch && !ui_state.ui_interacted_this_frame switch_cursor_lock();
 
