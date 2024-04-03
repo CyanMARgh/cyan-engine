@@ -246,3 +246,25 @@ make_stencil_texture :: (W : s32,  H : s32) -> Texture {
 
 	return result;
 }
+
+read_texture :: (using texture : Texture, channels : GLenum, data_type : GLenum) -> []u8 {
+	size := 0;
+	if channels == {
+		case GL_RGBA; size = 4;
+		case GL_RGB;  size = 3;
+		case GL_RED;  size = 1;
+		case; size = 0;
+	}
+	if data_type == {
+		case GL_FLOAT; size *= size_of(float);
+		case; size = 0;
+	}
+
+	assert(size != 0);
+	result := NewArray(width * height * depth * size, u8);
+	glBindTexture(category, id);
+		glGetTexImage(category, 0, channels, data_type, result.data);
+	glBindTexture(category, 0);
+	return result;
+}
+

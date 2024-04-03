@@ -182,6 +182,9 @@ set :: (s : *Shader, field : string, value : Matrix4) {
 set :: (s : *Shader, field : string, value : u32) {
 	glUniform1ui(find_id(s, field), value);
 }
+set :: (s : *Shader, field : string, value : bool) {
+	glUniform1ui(find_id(s, field), xx value);
+}
 set :: (s : *Shader, field : string, value : s32) {
 	glUniform1i(find_id(s, field), value);
 }

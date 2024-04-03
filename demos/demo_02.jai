@@ -27,7 +27,7 @@ main :: () {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		use(*shader_show_texture);
-			bind_sampler(0, test_texture);
+			bind(0, test_texture);
 			glBindSampler(0, sampler.id);
 		draw_empty_mesh(6);
 		check_gl_error();

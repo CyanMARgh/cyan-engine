@@ -87,7 +87,7 @@ main :: () {
 			glDisable(GL_DEPTH_TEST);
 
 		bind_as_target(fb_transparent);
-			bind_sampler(6, fb_solid.textures[0]);
+			bind(6, fb_solid.textures[0]);
 
 			glEnable(GL_BLEND);
 			glBlendFunci(0, GL_ONE, GL_ONE);

@@ -55,7 +55,7 @@ main :: () {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		use(*shader_default);
-			bind_sampler(0, perlin_texture);
+			bind(0, perlin_texture);
 			set(*shader_default, "u_rows", sphere_quality);
 			set(*shader_default, "u_columns", sphere_quality);
 			set(*shader_default, "u_layers", cast(u32)layers_count);

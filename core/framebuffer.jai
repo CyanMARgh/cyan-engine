@@ -102,7 +102,7 @@ make_framebuffer :: (_width : s32, _height : s32, _attachments : ..FB_Attachment
 			color_attachments_count += 1;			
 		}
 		// print("+ attachment\n");
-		texture := make_texture_buffer(width, height, .{fba.format, samples, 0});
+		texture := make_texture_buffer(width, height, .{fba.format, samples, GL_TEXTURE_2D});
 		glFramebufferTexture2D(GL_FRAMEBUFFER, gl_attachment_type, texture.category, texture.id, 0);
 		textures[attachments_count] = texture;
 		attachments[attachments_count] = fba;
@@ -145,14 +145,14 @@ bind_default_target :: () {
 }
 bind_as_source :: (using framebuffer : Framebuffer) {
 	for i : 0..attachments_count-1 {
-		bind_sampler(xx i, textures[i]);
+		bind(xx i, textures[i]);
 	}
 }
 bind_as_sources :: (framebuffers : ..Framebuffer) {
 	slot := 0;
 	for framebuffers {
 		for i : 0..it.attachments_count-1 {
-			bind_sampler(xx slot, it.textures[i]);
+			bind(xx slot, it.textures[i]);
 			slot += 1;
 		}
 	}

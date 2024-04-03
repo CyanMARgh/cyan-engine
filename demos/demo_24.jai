@@ -35,7 +35,7 @@ main :: () {
 	defer deinit(*shader_volume_cubes);
 
 
-	tex3d := make_test_texture_3d();
+	tex3d := make_empty_texture_3d(GL_R8, 100);
 	defer deinit(*tex3d);
 
 	{

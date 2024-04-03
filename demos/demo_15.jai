@@ -87,7 +87,7 @@ main :: () {
 				draw(*text_painter.painter, 6);
 		bind_default_target();
 			use(*shader_show_texture);
-			bind_sampler(0, fb_canvas.textures[0]);
+			bind(0, fb_canvas.textures[0]);
 			draw_empty_mesh(6);
 		check_gl_error();
 	}

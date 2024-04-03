@@ -2,15 +2,21 @@
 #import "Basic"()(MEMORY_DEBUGGER = true);
 #import "Math";
 #import "GL";
+#import "File";
+
+GENERATE :: true;
 
 main :: () {
 	defer report_memory_leaks();
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
-	// init_ui(); defer deinit_ui();
+	init_ui(); defer deinit_ui();
 
 	shader_default := compile_shader_vf(VERT_DEFAULT, incl(DSTHEADER_DEFAULT, FRAG_EXTENDED));
 	defer deinit(*shader_default);
+
+	shader_show_occlusion := compile_shader_vf(VERT_DEFAULT, incl(DSTHEADER_DEFAULT, FRAG_SHOW_OCCLUSION));
+	defer deinit(*shader_show_occlusion);
 
 	loaded_assets := load_assets("./res/shapes.glb");
 	defer deinit(*loaded_assets);
@@ -85,7 +91,7 @@ main :: () {
 				glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 
 				for *shader_default {
-					for translate(.{0, 0, zf * 2 - 1}) {
+					for translate(.{0, 0, 1 - zf * 2}) {
 						for scale(MODEL_SCALE) {
 						 	draw_all_roots(loaded_assets);
 						}
@@ -109,24 +115,72 @@ main :: () {
 	shader_gen_occlusion := compile_shader_c(COMP_GEN_OCCLUSION, 32, 32);
 	defer deinit(*shader_gen_occlusion);
 
+	BRDF_RESOLUTION :: 128;
+	texture_brdf := make_texture_buffer(BRDF_RESOLUTION, BRDF_RESOLUTION, .{GL_RGB8, 0, GL_TEXTURE_2D});
+	defer deinit(*texture_brdf);
+	{
+		shader_prerender := compile_shader_vf(incl(defs("NOFLIP"), VERT_SCREEN_QUAD), FRAG_BRDF);
+		defer deinit(*shader_prerender);
 
-	z_done := 0;
+		prerender_texture_fbo : u32;
+		glGenFramebuffers(1, *prerender_texture_fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, prerender_texture_fbo);
+			glViewport(0, 0, BRDF_RESOLUTION, BRDF_RESOLUTION);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_brdf.id, 0);
+			for *shader_prerender {
+				draw_empty_mesh(6);
+			}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, *prerender_texture_fbo);
+	}
+
+	z_done := 0;		
+	#if !GENERATE {
+		data := read_entire_file("res/test_occlusion_texture",, temp);
+		z_done = occlusion_texture.depth;
+		glBindTexture(occlusion_texture.category, occlusion_texture.id);
+			glTexSubImage3D(occlusion_texture.category, 0, 0, 0, 0, xx occlusion_texture.width, xx occlusion_texture.height, xx occlusion_texture.depth, GL_RGBA, GL_FLOAT, data.data);
+		glBindTexture(occlusion_texture.category, 0);
+	} else {
+		// while z_done < occlusion_texture.depth {
+		// 	for *shader_gen_occlusion {
+		// 		bind(0, texture_model_slices);
+		// 		set("u_scale", MODEL_SCALE);
+		// 		set("u_target_size", ivec3.{occlusion_texture.width, occlusion_texture.height, occlusion_texture.depth});
+		// 		glBindImageTexture(1, occlusion_texture.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+		// 		set("u_offset", ivec3.{0, 0, xx z_done});
+		// 		compute(xx occlusion_texture.width, xx occlusion_texture.height, 1);
+		// 	}
+		// 	z_done += 1;
+		// 	print("% / %\n", z_done, occlusion_texture.depth);
+		// 	glFlush();
+		// }
+		// data := read_texture(occlusion_texture, GL_RGBA, GL_FLOAT,, temp);
+		// write_entire_file("res/test_occlusion_texture", cast(string)data);
+	}
 
 	shader_show_texture := compile_shader_vf(VERT_SCREEN_SPACE, FRAG_SHOW_TEXTURE);
 	defer deinit(*shader_show_texture);
 
 	slice_coord := .5;
 	glEnable(GL_CULL_FACE);
-	for window_cycle() {
+
+	show_occlusion_direction := false;
+	graphics_state.default_camera = .{.{yaw = 5.999185, pitch = -0.08, position = .{-2.670977, 0.833297, 9.960238}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}}, 10, 0.15, 0.002, 1.570796};
+	for window_cycle(print_statistical_fps = true, capture_video = false) {
+		maybe_switch := false;
 		for Events if it.type == {
 			case .KEY; using it.key_event;
 			if type == .PRESS ifx keycode == {
 				case GLFW_KEY_ESCAPE; exit();
 				case #char"P"; screenshot();
+				case #char"C"; print("camera = %\n", graphics_state.default_camera);
+				case #char"N"; show_occlusion_direction ^= true;
 			}
-			// if button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS {
-			// 	maybe_switch = true;
-			// }
+			case .MOUSE_BUTTON; using it.mouse_button_event;
+			if button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS {
+				maybe_switch = true;
+			}
 		}
 		if z_done < occlusion_texture.depth {
 			for *shader_gen_occlusion {
@@ -139,34 +193,89 @@ main :: () {
 			}
 			z_done += 1;
 			print("% / %\n", z_done, occlusion_texture.depth);
+			if z_done == occlusion_texture.depth {
+				data := read_texture(occlusion_texture, GL_RGBA, GL_FLOAT,, temp);
+				write_entire_file("res/test_occlusion_texture", cast(string)data);
+				break;
+			}
 		}
+
+		bind_default_target();
+		update_default_camera();
+
 		glClearColor(.7, .8, .9, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		slice_coord = sin(backend_state.current_time) * .5 + .5;
-		for *shader_show_texture {
-			bind(0, texture_model_slices);
-			set("u_slice_resolution", ivec2.{texture_model_slices.width, texture_model_slices.height});
-			bind(1, occlusion_texture);
-			set("u_slice_coord", slice_coord);
-			draw_empty_mesh(6);
+		// slice_coord = sin(backend_state.current_time) * .5 + .5;
+		// for *shader_show_texture {
+		// 	bind(0, texture_model_slices);
+		// 	set("u_slice_resolution", ivec2.{texture_model_slices.width, texture_model_slices.height});
+		// 	bind(1, occlusion_texture);
+		// 	set("u_slice_coord", slice_coord);
+		// 	draw_empty_mesh(6);
+		// }
+
+		glEnable(GL_DEPTH_TEST);
+		clear_target(GL_DEPTH_BUFFER_BIT);
+		for *shader_show_occlusion {
+			bind(0, occlusion_texture);
+			bind(1, texture_brdf);
+			set("u_show_occlusion_direction", show_occlusion_direction);
+		 	draw_all_roots(loaded_assets);
 		}
 
-		clear_target(GL_DEPTH_BUFFER_BIT);
 		// ui_begin();
 		// 	float_range(*slice_coord, 0., 1., "z = %");
 		// ui_end();
 
-		// if maybe_switch && !ui_state.ui_interacted_this_frame switch_cursor_lock();
+		if maybe_switch && !ui_state.ui_interacted_this_frame switch_cursor_lock();
 
 		check_gl_error();
 	}
 }
 
+FRAG_SHOW_OCCLUSION :: #string GLSL
+	uniform layout(binding = 0) sampler3D u_occlusion;
+	uniform layout(binding = 1) sampler2D u_brdf;
+	const float box_scale = 0.1;
+
+	in struct VO {
+		vec3 position;
+		vec3 normal;
+		vec2 uv_0;
+	} vo;
+
+	uniform bool u_show_occlusion_direction;
+
+	void main() {
+		vec3 ao_coord = vo.position * box_scale * .5 + .5;
+		vec4 ao_raw = texture(u_occlusion, ao_coord);
+		ao_raw.x = 1 - pow(1 - ao_raw.x, 2);
+		vec3 N = vo.normal;
+
+		vec3 d = ao_raw.yzw;
+		float a = ao_raw.x;
+
+		float cosb = dot(d, N);
+
+		float ao = texture(u_brdf, vec2(a, cosb)).x;
+
+		// float h = max(0, dot(N, normalize(ao.yzw)) * .5 + .5);
+		// float H = 1 - pow(1 - ao.x, 2) * h;
+
+		// o_color = vec4(ao.xxx * .5 + .5, 1);
+		if(u_show_occlusion_direction) {
+			o_color = vec4(normalize(ao_raw.yzw) * .5 + .5, 1);
+		} else {
+			o_color = vec4(ao, ao, ao, 1);
+		}
+	}
+GLSL
+
 COMP_GEN_OCCLUSION :: #string GLSL
 	uniform layout(binding = 0) sampler3D u_model_slices;
 	uniform layout(rgba16f, binding = 1) image3D u_occlusion;
-	const float radius = 1.5;
+	const float radius = 1.0;
 	uniform ivec3 u_target_size;
 	uniform float u_scale;
 	uniform ivec3 u_offset;
@@ -187,10 +296,11 @@ COMP_GEN_OCCLUSION :: #string GLSL
 		return fract((p3.xxy + p3.yxx)*p3.zyx);
 	}
 	const float PI = 3.14159265;
+	const float phi = PI * (sqrt(5) - 1);
 
 	vec4 find_occlusion(vec3 p, float r, float r2) {
 		const int QUALITY = 10000;
-		const int STEPS = 40;
+		const int STEPS = 10;
 		const int SAMPLES = QUALITY / STEPS;
 		float step_size = r / STEPS;
 
@@ -199,20 +309,27 @@ COMP_GEN_OCCLUSION :: #string GLSL
 		vec3 occ_dir = vec3(0);
 
 		for(int i = 0; i < SAMPLES; i++) {
-			vec2 h = hash23(p + vec3(0, 0, i));
-			float phi = h.x * 2 * PI;
-			float ry = h.y * 2 - 1;
-			float rr = sqrt(1 - ry * ry);
-			vec3 ray = vec3(rr * sin(phi), ry, rr * cos(phi));
+			float y = 1 - (i / float(SAMPLES - 1)) * 2;
+			float rr = sqrt(1 - y * y);
+			float theta = phi * i; 
+
+			vec3 ray = vec3(rr * cos(theta), y, rr * sin(theta));
+
+			// vec2 h = hash23(vec3(0, 0, i));
+			// float phi = h.x * 2 * PI;
+			// float ry = h.y * 2 - 1;
+			// float rr = sqrt(1 - ry * ry);
+			// vec3 ray = vec3(rr * sin(phi), ry, rr * cos(phi));
 
 			vec3 dp = ray * step_size;
 
 			vec3 pij = p;// + (hash33(p) * 2 - 1) * r2;
 			int j = 0;
-			for(int j = 0; j < STEPS; j++) {
+			for(; j < STEPS; j++) {
 				pij += dp;
 				if(texture(u_model_slices, pij).r > .5) {
 					float occi = (STEPS - j) / float(STEPS);
+					occi = pow(occi, 2);
 					occ_dir += occi * ray;
 					occ += occi;
 					break;
@@ -223,7 +340,7 @@ COMP_GEN_OCCLUSION :: #string GLSL
 
 		occ /= s;
 		occ = pow(occ, .5);
-		return vec4(1 - occ, occ * normalize(occ_dir));
+		return vec4(1 - occ, occ * occ_dir / (0.001 + length(occ_dir)));
 	}
 
 	void main() {

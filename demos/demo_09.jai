@@ -44,7 +44,8 @@ main :: () {
 	shader_ssao := compile_shader_vf(VERT_SCREEN_QUAD, PP_FRAG_SSAO); defer deinit(*shader_ssao);
 	shader_blur := compile_shader_vf(VERT_SCREEN_QUAD, incl(srcheaders(fb_gbuffer, fb_ssao_raw), FRAG_BLUR)); defer deinit(*shader_blur);
 
-	loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
+	// loaded_assets := load_assets("./res/helmet/DamagedHelmet.gltf");
+	loaded_assets := load_assets("res/shapes.glb");
 	defer deinit(*loaded_assets);
 	noise_texture := make_noise_texture(4, 4);
 	defer deinit(*noise_texture);
@@ -60,16 +61,18 @@ main :: () {
 
 	render_scene :: () #expand {
 		glEnable(GL_DEPTH_TEST);
-		use(*shader_cube);
-			bind(default_material);
-			set_model_transform(make_scale_matrix4(.{10, 10, 10}));
-			glCullFace(GL_FRONT);
-			draw_empty_mesh(36);
-			glCullFace(GL_BACK);
+		// use(*shader_cube);
+		// 	bind(default_material);
+		// 	set_model_transform(make_scale_matrix4(.{10, 10, 10}));
+		// 	glCullFace(GL_FRONT);
+		// 	draw_empty_mesh(36);
+		// 	glCullFace(GL_BACK);
 		use(*shader_default);
 			draw_all_roots(loaded_assets);
 		glDisable(GL_DEPTH_TEST);
 	}
+
+	graphics_state.default_camera = .{.{yaw = 5.999185, pitch = -0.08, position = .{-2.670977, 0.833297, 9.960238}, near = 0.1, far = 1000, fow_vertical = 0.942478, screen_size = .{1280, 720}}, 10, 0.15, 0.002, 1.570796};
 	for window_cycle(fps_log_period = 100, print_statistical_fps = true) {
 		for Events if it.type == {
 			case .KEY; using it.key_event;
@@ -99,7 +102,7 @@ main :: () {
 		bind_as_target(fb_ssao_raw);
 			use(*shader_ssao);
 				bind_as_source(fb_gbuffer);
-				bind_sampler(4, noise_texture);
+				bind(4, noise_texture);
 				set(*shader_ssao, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				draw_empty_mesh(6);
 		bind_default_target();
@@ -197,8 +200,9 @@ FRAG_BLUR :: #run incl(UBO_SCREEN_METRICS, UBO_TIME_INFO, #string GLSL
 
 
 		// if(fract(u_time * .5) < .5) 
+		if(depth < 1)
 		{
-			color *= occlusion;
+			color = vec3(occlusion, occlusion, occlusion);
 		}
 		o_color = vec4(color, 1);
 	}
@@ -245,7 +249,7 @@ GLSL);
 
 gen_kernel :: () -> string {
 	builder := String_Builder.{allocator = temp};
-	KERNEL_SIZE :: 20;
+	KERNEL_SIZE :: 128;
 	KERNEL_RADIUS :: 0.7;
 	KERNEL_BIAS :: 0.025;
 

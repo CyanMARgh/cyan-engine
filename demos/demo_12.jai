@@ -187,7 +187,7 @@ main :: () {
 				set(*shader_sphere, "u_columns", columns);
 				set(*shader_sphere, "u_rows", rows);
 				bind_sampler(7, prerendered_cubemap);
-				bind_sampler(6, texture_brdf);
+				bind(6, texture_brdf);
 				bind(material_default);
 				for j : 0..5 {
 					for i : 0..5 {
@@ -200,14 +200,14 @@ main :: () {
 				}
 				use(*shader_default);
 					bind_sampler(7, prerendered_cubemap);
-					bind_sampler(6, texture_brdf);
+					bind(6, texture_brdf);
 					draw_all_roots(loaded_assets);
 			glDisable(GL_DEPTH_TEST);
 		bind_as_target(fb_ssao_raw);
 			use(*shader_ssao);
 				set(*shader_ssao, "u_ssao_quality", Vector2.{xx ssao_quality.x, xx ssao_quality.y});
 				bind_as_source(fb_gbuffer_ms);
-				bind_sampler(6, noise_texture);
+				bind(6, noise_texture);
 				draw_empty_mesh(6);
 		bind_as_target(fb_ssao_blurred);
 			use(*shader_blur);
@@ -217,9 +217,9 @@ main :: () {
 		bind_default_target();
 			use(*shader_light_pass);
 				bind_as_sources(fb_gbuffer_ms);
-				bind_sampler(6, texture_brdf);
+				bind(6, texture_brdf);
 				bind_sampler(7, prerendered_cubemap);
-				bind_sampler(8, fb_ssao_blurred.textures[0]);
+				bind(8, fb_ssao_blurred.textures[0]);
 				draw_empty_mesh(6);
 		// if current_time >= PI * 4 exit();
 	}
@@ -563,91 +563,6 @@ FRAG_PREFILTER :: #string GLSL
 		prefiltered_color /= total_weight;
 
 		o_color = prefiltered_color;
-	}
-GLSL
-FRAG_BRDF :: #string GLSL
-	const float PI = 3.14159265359;
-	float RadicalInverse_VdC(uint bits)  {
-		bits = (bits << 16u) | (bits >> 16u);
-		bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-		bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-		bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-		bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-		return float(bits) * 2.3283064365386963e-10;
-	}
-	vec2 Hammersley(uint i, uint N) {
-		return vec2(float(i)/float(N), RadicalInverse_VdC(i));
-	}
-	vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float Roughness) {
-		float a = Roughness * Roughness;
-		float Phi = 2 * PI * Xi.x;
-		float CosTheta = sqrt((1 - Xi.y) / (1 + (a * a - 1) * Xi.y));
-		float SinTheta = sqrt(1 - CosTheta * CosTheta);
-		vec3 H;
-		H.x = SinTheta * cos(Phi);
-		H.y = SinTheta * sin(Phi);
-		H.z = CosTheta;
-		vec3 UpVector = abs(N.z) < 0.999 ? vec3(0,0,1) : vec3(1,0,0);
-		vec3 TangentX = normalize(cross(UpVector, N));
-		vec3 TangentY = cross(N, TangentX);
-
-		return TangentX * H.x + TangentY * H.y + N * H.z;
-	}
-	float GeometrySchlickGGX(float NdotV, float roughness) {
-		float a = roughness;
-		float k = (a * a) / 2.0;
-
-		float nom   = NdotV;
-		float denom = NdotV * (1.0 - k) + k;
-
-		return nom / denom;
-	}
-	float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
-		float NdotV = max(dot(N, V), 0.0);
-		float NdotL = max(dot(N, L), 0.0);
-		float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-		float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-
-		return ggx1 * ggx2;
-	}
-	vec2 IntegrateBRDF(float NdotV, float roughness) {
-		vec3 V;
-		V.x = sqrt(1.0 - NdotV * NdotV);
-		V.y = 0.0;
-		V.z = NdotV;
-
-		float A = 0.0;
-		float B = 0.0;
-
-		vec3 N = vec3(0.0, 0.0, 1.0);
-
-		const uint SAMPLE_COUNT = 1024u;
-		for(uint i = 0u; i < SAMPLE_COUNT; ++i) {
-			vec2 Xi = Hammersley(i, SAMPLE_COUNT);
-			vec3 H  = ImportanceSampleGGX(Xi, N, roughness);
-			vec3 L  = normalize(2.0 * dot(V, H) * H - V);
-
-			float NdotL = max(L.z, 0.0);
-			float NdotH = max(H.z, 0.0);
-			float VdotH = max(dot(V, H), 0.0);
-
-			if(NdotL > 0.0) {
-				float G = GeometrySmith(N, V, L, roughness);
-				float G_Vis = (G * VdotH) / (NdotH * NdotV);
-				float Fc = pow(1.0 - VdotH, 5.0);
-
-				A += (1.0 - Fc) * G_Vis;
-				B += Fc * G_Vis;
-			}
-		}
-		return vec2(A, B) / float(SAMPLE_COUNT);
-	}
-
-	in vec2 vo_uv;
-	out vec3 o_color;
-
-	void main() {
-		o_color = vec3(IntegrateBRDF(vo_uv.x, vo_uv.y), 0); 
 	}
 GLSL
 
