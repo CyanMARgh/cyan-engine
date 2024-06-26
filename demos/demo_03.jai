@@ -65,6 +65,7 @@ rects :: () {
 			case .KEY; using it.key_event;
 			if type == .PRESS ifx keycode == {
 				case GLFW_KEY_ESCAPE; exit();
+				case #char"P"; screenshot();
 			}
 		}
 		update_default_camera();

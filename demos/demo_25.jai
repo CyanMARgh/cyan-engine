@@ -109,7 +109,7 @@ main :: () {
 		}
 	}
 
-	occlusion_texture := make_empty_texture_3d(GL_RGBA16F, 64);
+	occlusion_texture := make_empty_texture_3d(GL_RGBA16F, 128);
 	defer deinit(*occlusion_texture);
 
 	shader_gen_occlusion := compile_shader_c(COMP_GEN_OCCLUSION, 32, 32);
@@ -196,7 +196,7 @@ main :: () {
 			if z_done == occlusion_texture.depth {
 				data := read_texture(occlusion_texture, GL_RGBA, GL_FLOAT,, temp);
 				write_entire_file("res/test_occlusion_texture", cast(string)data);
-				break;
+				// break;
 			}
 		}
 
@@ -330,6 +330,7 @@ COMP_GEN_OCCLUSION :: #string GLSL
 				if(texture(u_model_slices, pij).r > .5) {
 					float occi = (STEPS - j) / float(STEPS);
 					occi = pow(occi, 2);
+					// float occi = 1;
 					occ_dir += occi * ray;
 					occ += occi;
 					break;

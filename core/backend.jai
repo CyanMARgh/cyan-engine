@@ -1,7 +1,7 @@
 GL_REQUIRED_VERSION_MAJOR :: 4;
 GL_REQUIRED_VERSION_MINOR :: 3;
 
-init_resources :: (initial_size := ivec2.{1280, 720}) {
+init_resources :: (initial_size := ivec2.{1200, 720}) {
 	#if OS == .LINUX {
 		print("\e[0m");
 	}
@@ -53,10 +53,6 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 		}
 	}
 	glfwSetKeyCallback(window, key_callback);
-	mouse_callback :: (window : *GLFWwindow, xpos : float64, ypos : float64) #c_call {
-		new_cursor_position = Vector2.{xx xpos, xx ypos};
-	}
-	glfwSetCursorPosCallback(window, mouse_callback);
 	mouse_button_callback :: (window : *GLFWwindow, button : s32, action : s32, mods : s32) #c_call {
 		if action == 1 {
 			mouse_buttons_down[button] = true;
@@ -74,16 +70,6 @@ init_resources :: (initial_size := ivec2.{1280, 720}) {
 					mods = mods
 				}
 			});
-			// if button == GLFW_MOUSE_BUTTON_LEFT {
-			// 	if action == GLFW_PRESS {
-			// 		backend_state.left_mouse_state = .DOWN;
-			// 	} else if action == GLFW_RELEASE {
-			// 		backend_state.left_mouse_state = .DOWN;
-			// 	}
-			// }
-
-			//TODO update mouse button state in backend_state
-			// print("mbe = %\n", action);
 		}
 	}
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -170,7 +156,17 @@ for_expansion :: (using window_cycle : Window_Cycle, $body : Code, flags : For_F
 			for * mouse_buttons_pressed it.* = false;
 			for * mouse_buttons_released it.* = false;
 			glfwPollEvents();
-			cursor_delta = new_cursor_position - cursor_position;			
+			{
+				px, py : float64;
+				glfwGetCursorPos(window, *px, *py);
+				new_cursor_position = .{xx px, xx py};
+			}
+
+			cursor_delta = new_cursor_position - cursor_position;
+
+			if is_cursor_locked {
+				centerize_cursor();
+			}
 			cursor_position = new_cursor_position;
 			if lmb_pressed() {
 				dragg_start = backend_state.cursor_position;
@@ -256,18 +252,20 @@ centerize_cursor :: () {
 }
 lock_cursor :: () {
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	is_cursor_locked = true;
 	centerize_cursor();
+	is_cursor_locked = true;
 }
 unlock_cursor :: () {
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-	is_cursor_locked = false;
 	centerize_cursor();
+	is_cursor_locked = false;
 }
 switch_cursor_lock :: () {
-	glfwSetInputMode(window, GLFW_CURSOR, xx ifx is_cursor_locked then GLFW_CURSOR_NORMAL else GLFW_CURSOR_DISABLED);
-	is_cursor_locked ^= true;
-	centerize_cursor();
+	if is_cursor_locked {
+		unlock_cursor();
+	} else {
+		lock_cursor();
+	}
 }
 lmb_pressed :: () -> bool {
 	return mouse_buttons_pressed[GLFW_MOUSE_BUTTON_LEFT];
@@ -287,9 +285,7 @@ backend_state : struct {
 	is_first_frame := true;
 	window_resized_this_frame := false;
 
-	new_cursor_position, cursor_position : Vector2;
-	cursor_delta : Vector2;
-	dragg_start : Vector2;
+	new_cursor_position : Vector2;
 
 	window_events : SBDA(Window_Event, 100);
 	mouse_buttons_down : [GLFW_MOUSE_BUTTON_LAST]bool;
@@ -299,10 +295,14 @@ backend_state : struct {
 	// left_mouse_state := Mouse_State.UP;
 
 	// keys_events : [1024]bool;
-	window_metrics : struct {
+	using,only(cursor_position, cursor_delta, dragg_start) window_metrics : struct {
 		width, height : s32;
 		width_over_height : float;
 		height_over_width : float;
+	 	cursor_position : Vector2 #align 8;
+		cursor_delta : Vector2 #align 8;
+		dragg_start : Vector2 #align 8;
+
 		#place width;
 		size : ivec2;
 	}

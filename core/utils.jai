@@ -112,3 +112,5 @@ scl_cmp :: (loc_1 : Source_Code_Location, loc_2 : Source_Code_Location) -> bool 
 	if loc_1.character_number != loc_2.character_number return false;
 	return loc_1.fully_pathed_filename == loc_2.fully_pathed_filename;
 }
+
+ivec4 :: Generic_Vector(s32, 4);

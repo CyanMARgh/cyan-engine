@@ -18,6 +18,14 @@ FB_Attachment :: struct {
 	format : GLenum;
 }
 srcheader :: (builder : *String_Builder, using framebuffer : Framebuffer, postfix : string, offset : int) {
+	// sampler_prefix :: (format : GLenum) -> string {
+	// 	str : string;
+	// 	if format == {
+	// 		case GL_R8;
+	// 		case; assert(false);
+	// 	}
+	// 	return str;
+	// }
 	if samples {
 		print_to_builder(builder, "#define SAMPLES% %\n", postfix, samples);
 		for 0..attachments_count-1 {
@@ -62,6 +70,10 @@ channels_type_to_name :: (chanels_type : GLenum) -> string {
 		case GL_DEPTH_COMPONENT32; #through;
 		case GL_R32F; #through;
 		case GL_R8; result = "float";
+		case GL_R8I; #through;
+		case GL_R8UI; #through;
+		case GL_R16I; #through;
+		case GL_R16UI; result = "int";
 	}
 	assert(result != "");
 	return result;

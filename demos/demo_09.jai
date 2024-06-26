@@ -61,12 +61,12 @@ main :: () {
 
 	render_scene :: () #expand {
 		glEnable(GL_DEPTH_TEST);
-		// use(*shader_cube);
-		// 	bind(default_material);
-		// 	set_model_transform(make_scale_matrix4(.{10, 10, 10}));
-		// 	glCullFace(GL_FRONT);
-		// 	draw_empty_mesh(36);
-		// 	glCullFace(GL_BACK);
+		use(*shader_cube);
+			bind(default_material);
+			set_model_transform(make_scale_matrix4(.{10, 10, 10}));
+			glCullFace(GL_FRONT);
+			draw_empty_mesh(36);
+			glCullFace(GL_BACK);
 		use(*shader_default);
 			draw_all_roots(loaded_assets);
 		glDisable(GL_DEPTH_TEST);
@@ -249,7 +249,7 @@ GLSL);
 
 gen_kernel :: () -> string {
 	builder := String_Builder.{allocator = temp};
-	KERNEL_SIZE :: 128;
+	KERNEL_SIZE :: 32;
 	KERNEL_RADIUS :: 0.7;
 	KERNEL_BIAS :: 0.025;
 

@@ -7,7 +7,7 @@ main :: () {
 	init_resources(); defer deinit_resources();
 	init_default_graphics(); defer deinit_default_graphics();
 
-	shader_triangle := compile_shader_vf(VERT_CAMERA_UBO_TEST, FRAG_TRIANGLE);
+	shader_triangle := compile_shader_vf(VERT_TRIANGLE, FRAG_TRIANGLE);
 	defer deinit(*shader_triangle);
 	mesh_triangle := get_mesh(SRC_MESH_TRIANGLE);
 	defer deinit(*mesh_triangle);
@@ -34,13 +34,7 @@ main :: () {
 	}
 }
 
-SRC_MESH_TRIANGLE :: Mesh_Source.{
-	points = .[
-		 0,  1,  0,
-		 1, -1,  0,
-		-1, -1,  0,
-	]
-};
+SRC_MESH_TRIANGLE :: Mesh_Source.{points = .[0,  1,  0, 1, -1,  0, -1, -1,  0]};
 VERT_TRIANGLE :: #string GLSL
 	layout (location = 0) in vec3 a_pos;
 
@@ -53,18 +47,7 @@ VERT_TRIANGLE :: #string GLSL
 		vert_out.position = a_pos;
 	}
 GLSL
-FRAG_TRIANGLE :: #string GLSL
-	in Vert_Out {
-		vec3 position;
-	} vert_out;
-
-	out vec4 o_color;
-
-	void main() {
-		o_color = vec4(vert_out.position, 1);
-	}
-GLSL
-VERT_CAMERA_UBO_TEST :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
+FRAG_TRIANGLE :: #run incl(UBO_CAMERA_PROPERTIES, #string GLSL
 	struct Input_Vertice {
 		vec3 position;
 		vec3 normal;

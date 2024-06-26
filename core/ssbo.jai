@@ -39,7 +39,7 @@ deinit :: (using ssbo : *SSBO_Dynamic) {
 	array_free(cpu_buffer);
 }
 
-operator*[] :: (using ssbo_dynamic : *SSBO_Dynamic($Type), i : int) -> *Type {
+operator*[] :: (using ssbo_dynamic : *SSBO_Dynamic($T), i : int) -> *T {
 	return *cpu_buffer[i];
 }
 

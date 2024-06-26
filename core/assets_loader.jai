@@ -67,8 +67,8 @@ load_primitive :: (gltf_data : GLTF_Data, primitive : GLTF_Primitive) -> Primiti
 		normals : [..]float;	// 1
 		// tangents: []float;	// 2
 		// colors 	: []float;	// 3
-		// joints 	: []u32;	// 4
-		// weights : []float;	// 5
+		joints 	: [..]u32;	    // 4
+		weights : [..]float;    // 5
 		uvs_0 	: [..]float;	// 5
 		// uvs_1 	: []float;	// 6
 		// uvs_2 	: []float;	// 7
@@ -90,12 +90,23 @@ load_primitive :: (gltf_data : GLTF_Data, primitive : GLTF_Primitive) -> Primiti
 			accessor := gltf_data.accessors[primitive.indices_accessor];
 			read_buffer_from_accessor(*gltf_data, accessor, *indices);
 		}
+		if primitive.weights_accessor != -1 {
+			accessor := gltf_data.accessors[primitive.weights_accessor];
+			read_buffer_from_accessor(*gltf_data, accessor, *weights);
+		}
+		if primitive.joints_accessor != -1 {
+			accessor := gltf_data.accessors[primitive.joints_accessor];
+			read_buffer_from_accessor(*gltf_data, accessor, *joints);
+		}
+
 
 		mesh_src := Mesh_Source.{
 			points = points,
 			normals = normals,
 			uvs_0 = uvs_0,
-			indices = indices
+			indices = indices,
+			joints = joints,
+			weights = weights
 		};
 		return .{get_mesh(mesh_src), primitive.material};
 	}

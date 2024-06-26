@@ -38,6 +38,7 @@ main :: () {
 			if type == .PRESS ifx keycode == {
 				case GLFW_KEY_ESCAPE; exit();
 				case #char"P"; screenshot();
+				case #char"C"; print("camera = %\n", graphics_state.default_camera);
 			}
 			case .MOUSE_BUTTON; using it.mouse_button_event;
 			if button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS {

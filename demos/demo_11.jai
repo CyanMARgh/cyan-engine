@@ -187,6 +187,7 @@ FRAG_REFLECTIVE :: #run incl(UBO_CAMERA_PROPERTIES, UBO_TIME_INFO, #string GLSL
 		vec3 normal;
 		vec2 uv_0;
 	} vo;
+	in flat int vo_index;
 	out vec4 o_color;
 
 	void main() {

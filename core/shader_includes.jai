@@ -3,6 +3,9 @@ UBO_SCREEN_METRICS :: #string GLSL
 		ivec2 u_window_size;
 		float u_width_over_height;
 		float u_height_over_width;
+	 	vec2 u_cursor_position;
+		vec2 u_cursor_delta;
+		vec2 u_dragg_start;
 	};
 GLSL
 UBO_CAMERA_PROPERTIES :: #string GLSL
@@ -74,6 +77,8 @@ VERTICE_INTERFACE_OUT :: #run incl(VERTICE_INTERFACE_STRUCT, #string GLSL
 		vec3 normal;
 		vec2 uv_0;
 	} vo;
+	out flat int vo_index;
+	uniform int u_index_0;
 	void main() {
 		Input_Vertice input_vertice = gen_vertice();
 		vec4 world_pos = u_mat_m * vec4(input_vertice.position, 1);
@@ -83,6 +88,7 @@ VERTICE_INTERFACE_OUT :: #run incl(VERTICE_INTERFACE_STRUCT, #string GLSL
 			normalize((vec4(input_vertice.normal, 0) * inverse(u_mat_m)).xyz),
 			input_vertice.uv_0
 		);
+		vo_index = u_index_0 + gl_InstanceID;
 	}
 GLSL);
 DSTHEADER_DEFAULT :: #string GLSL
@@ -96,6 +102,7 @@ FRAG_EXTENDED :: #run incl(UBO_MATERIAL, UBO_CAMERA_PROPERTIES, GLTF_TEXTURES, #
 		vec3 normal;
 		vec2 uv_0;
 	} vo;
+	in flat int vo_index;
 
 	void main() {
 		vec2 uv_0 = vo.uv_0;
@@ -134,6 +141,9 @@ FRAG_EXTENDED :: #run incl(UBO_MATERIAL, UBO_CAMERA_PROPERTIES, GLTF_TEXTURES, #
 				emissive = texture(u_emissive, uv_0).xyz;
 			}
 			o_emissive = emissive;
+		#endif
+		#ifdef O_INDEX
+			o_index = vo_index;
 		#endif
 	}
 GLSL);

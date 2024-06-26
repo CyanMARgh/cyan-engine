@@ -57,6 +57,7 @@ FRAG_SHOW_NORMAL :: #run incl(DSTHEADER_DEFAULT, #string GLSL
 		vec3 normal;
 		vec2 uv_0;
 	} vo;
+	in flat int vo_index;
 
 	void main() {
 		vec2 uv_0 = vo.uv_0;
