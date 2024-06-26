@@ -5,6 +5,8 @@
 #import "Print_Color";
 DEBUG :: true;
 
+
+
 // TODO slice atom_painter to 2 structs (1 - sends data to gpu and draws it, 2 - handles draw_quad(), simulate(), etc. ) 
 // TODO push_transformation();
 // TODO unhandled: mipmap & non-default sampling params 
